@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/AuthProvider'
 import Navbar from '@/components/Navbar'
-import Script from 'next/script'
+import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -42,45 +42,53 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+          <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
             <Navbar />
             <main className="min-h-screen">
               {children}
             </main>
-            <footer className="bg-gray-900 text-white mt-16">
-              <div className="container mx-auto px-4 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-20">
+              <div className="container mx-auto px-4 py-16">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                   <div>
-                    <h3 className="text-xl font-bold mb-4">Ecommerce Start</h3>
-                    <p className="text-gray-400">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-bold text-xl">E</span>
+                      </div>
+                      <span className="text-xl font-bold">Ecommerce Start</span>
+                    </div>
+                    <p className="text-gray-400 leading-relaxed">
                       Your trusted destination for quality products and exceptional service.
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-4">Shop</h4>
-                    <ul className="space-y-2 text-gray-400">
-                      <li><a href="/" className="hover:text-white">All Products</a></li>
-                      <li><a href="/" className="hover:text-white">New Arrivals</a></li>
-                      <li><a href="/" className="hover:text-white">Best Sellers</a></li>
+                    <h4 className="font-bold mb-6 text-lg">Shop</h4>
+                    <ul className="space-y-3 text-gray-400">
+                      <li><a href="/" className="hover:text-white transition-colors">All Products</a></li>
+                      <li><a href="/" className="hover:text-white transition-colors">New Arrivals</a></li>
+                      <li><a href="/" className="hover:text-white transition-colors">Best Sellers</a></li>
+                      <li><a href="/" className="hover:text-white transition-colors">Sale</a></li>
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-4">Support</h4>
-                    <ul className="space-y-2 text-gray-400">
-                      <li><a href="/" className="hover:text-white">Contact Us</a></li>
-                      <li><a href="/" className="hover:text-white">Shipping Info</a></li>
-                      <li><a href="/" className="hover:text-white">Returns</a></li>
+                    <h4 className="font-bold mb-6 text-lg">Support</h4>
+                    <ul className="space-y-3 text-gray-400">
+                      <li><a href="/" className="hover:text-white transition-colors">Contact Us</a></li>
+                      <li><a href="/" className="hover:text-white transition-colors">Shipping Info</a></li>
+                      <li><a href="/" className="hover:text-white transition-colors">Returns</a></li>
+                      <li><a href="/" className="hover:text-white transition-colors">FAQ</a></li>
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-4">Account</h4>
-                    <ul className="space-y-2 text-gray-400">
-                      <li><a href="/orders" className="hover:text-white">My Orders</a></li>
-                      <li><a href="/cart" className="hover:text-white">Shopping Cart</a></li>
+                    <h4 className="font-bold mb-6 text-lg">Account</h4>
+                    <ul className="space-y-3 text-gray-400">
+                      <li><Link href="/profile" className="hover:text-white transition-colors">My Profile</Link></li>
+                      <li><Link href="/orders" className="hover:text-white transition-colors">My Orders</Link></li>
+                      <li><Link href="/cart" className="hover:text-white transition-colors">Shopping Cart</Link></li>
                     </ul>
                   </div>
                 </div>
-                <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <div className="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400">
                   <p>&copy; 2024 Ecommerce Start. All rights reserved.</p>
                 </div>
               </div>

@@ -14,13 +14,26 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { items } = body
+    const { items, address_id } = body
 
     if (!items || items.length === 0) {
       return NextResponse.json(
         { error: 'Cart is empty' },
         { status: 400 }
       )
+    }
+
+    // Get address if provided
+    let shippingAddress = null
+    if (address_id) {
+      const { data: address } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('id', address_id)
+        .eq('user_id', user.id)
+        .single()
+      
+      shippingAddress = address
     }
 
     // Calculate total
@@ -47,6 +60,10 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/checkout/cancel`,
       metadata: {
         user_id: user.id,
+        address_id: address_id || '',
+      },
+      shipping_address_collection: shippingAddress ? undefined : {
+        allowed_countries: ['US', 'CA', 'GB', 'AU'],
       },
     })
 
@@ -59,4 +76,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

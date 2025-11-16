@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import ProductGrid from '@/components/ProductGrid'
+import SearchBar from '@/components/SearchBar'
+import { Sparkles, Truck, Shield, Star, TrendingUp } from 'lucide-react'
 
 export default async function Home() {
   const supabase = createServerSupabaseClient()
@@ -10,29 +12,57 @@ export default async function Home() {
     .order('created_at', { ascending: false })
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
-            Welcome to Ecommerce Start
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-2xl mx-auto">
-            Discover amazing products at unbeatable prices. Shop the latest trends and technology.
-          </p>
-          <Link
-            href="#products"
-            className="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-          >
-            Shop Now
-          </Link>
+    <div className="min-h-screen">
+      {/* Hero Section - Enhanced */}
+      <section className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white py-24 md:py-32 overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <div className="animate-fade-in">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
+              <Sparkles className="w-5 h-5" />
+              <span className="text-sm font-medium">Premium Quality Products</span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+              Welcome to Ecommerce Start
+            </h1>
+            <p className="text-xl md:text-2xl mb-10 text-blue-100 max-w-3xl mx-auto leading-relaxed">
+              Discover amazing products at unbeatable prices. Shop the latest trends and technology with confidence.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link
+                href="#products"
+                className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-2"
+              >
+                <span>Shop Now</span>
+                <TrendingUp className="w-5 h-5" />
+              </Link>
+              <Link
+                href="#features"
+                className="btn-secondary text-lg px-8 py-4"
+              >
+                Learn More
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Products Section */}
-      <section id="products" className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+      {/* Search Bar Section */}
+      <section className="bg-white border-b border-gray-200 py-6 sticky top-0 z-40 shadow-sm">
+        <div className="container mx-auto px-4">
+          <SearchBar products={products || []} />
+        </div>
+      </section>
+
+      {/* Products Section - Enhanced */}
+      <section id="products" className="container mx-auto px-4 py-16 md:py-24">
+        <div className="text-center mb-12 animate-slide-in">
+          <h2 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
             Featured Products
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -43,36 +73,73 @@ export default async function Home() {
         <ProductGrid products={products || []} />
       </section>
 
-      {/* Features Section */}
-      <section className="bg-white py-16">
+      {/* Features Section - Enhanced */}
+      <section id="features" className="bg-gradient-to-br from-gray-50 to-indigo-50 py-20">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
+              Why Choose Us
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              We're committed to providing the best shopping experience
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Shield className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Quality Guaranteed</h3>
-              <p className="text-gray-600">All products are carefully selected and tested for quality</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Quality Guaranteed</h3>
+              <p className="text-gray-600 leading-relaxed">All products are carefully selected and tested for quality assurance</p>
             </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Truck className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Fast Shipping</h3>
-              <p className="text-gray-600">Quick and reliable delivery to your doorstep</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Fast Shipping</h3>
+              <p className="text-gray-600 leading-relaxed">Quick and reliable delivery to your doorstep worldwide</p>
             </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
+            
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Star className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Secure Payment</h3>
-              <p className="text-gray-600">Your payment information is safe and encrypted</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Premium Support</h3>
+              <p className="text-gray-600 leading-relaxed">24/7 customer support to help you with any questions</p>
+            </div>
+            
+            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Sparkles className="w-10 h-10 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Secure Payment</h3>
+              <p className="text-gray-600 leading-relaxed">Your payment information is safe and encrypted with Stripe</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-4xl md:text-5xl font-bold mb-2">10K+</div>
+              <div className="text-indigo-200">Happy Customers</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold mb-2">500+</div>
+              <div className="text-indigo-200">Products</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold mb-2">50+</div>
+              <div className="text-indigo-200">Countries</div>
+            </div>
+            <div>
+              <div className="text-4xl md:text-5xl font-bold mb-2">24/7</div>
+              <div className="text-indigo-200">Support</div>
             </div>
           </div>
         </div>
