@@ -38,8 +38,8 @@ npm install
 Create a `.env.local` file in the root directory:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://eqqcidlflclgegsalbub.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxcWNpZGxmbGNsZ2Vnc2FsYnViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMjIyNTQsImV4cCI6MjA3ODc5ODI1NH0.OA_Q1nDFzNjETg5765s35BPeWMe0Gut59g4pbSb4SKo
+NEXT_PUBLIC_SUPABASE_URL=https://*********************
+NEXT_PUBLIC_SUPABASE_ANON_KEY=ey*********************************************************************
 STRIPE_SECRET_KEY=your_stripe_secret_key_here
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here
 NEXT_PUBLIC_APP_URL=http://localhost:3000
