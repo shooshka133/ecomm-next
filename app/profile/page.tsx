@@ -8,6 +8,18 @@ import { UserProfile, UserAddress } from "@/types";
 import { User, MapPin, Plus, Edit, Trash2, Check, X } from "lucide-react";
 
 export default function ProfilePage() {
+  const [fullUser, setFullUser] = useState<any>(null);
+
+  const loadFullUser = async () => {
+    try {
+      const res = await fetch("/api/auth/full-user");
+      const data = await res.json();
+      setFullUser(data);
+    } catch (error) {
+      console.error("Failed to load full user:", error);
+    }
+  };
+
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -43,6 +55,7 @@ export default function ProfilePage() {
     if (user) {
       loadProfile();
       loadAddresses();
+      loadFullUser();
     }
   }, [user, authLoading, router]);
 
@@ -622,8 +635,11 @@ export default function ProfilePage() {
               <div>
                 <p className="text-indigo-200 text-sm">Member Since</p>
                 <p className="font-semibold">
-                  {user.created_at
+                  {/* {user.created_at
                     ? new Date(user.created_at).toLocaleDateString()
+                    : "N/A"} */}
+                  {fullUser?.created_at
+                    ? new Date(fullUser.created_at).toLocaleDateString()
                     : "N/A"}
                 </p>
               </div>

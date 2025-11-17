@@ -1,93 +1,102 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/components/AuthProvider'
-import { createSupabaseClient } from '@/lib/supabase/client'
-import { Order, OrderItem } from '@/types'
-import { Package, Clock, CheckCircle, XCircle, MapPin, ChevronDown, ChevronUp } from 'lucide-react'
-import Link from 'next/link'
-
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
+import { createSupabaseClient } from "@/lib/supabase/client";
+import { Order, OrderItem } from "@/types";
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  MapPin,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function OrdersPage() {
-  const { user, loading: authLoading } = useAuth()
-  const router = useRouter()
-  const [orders, setOrders] = useState<(Order & { order_items?: OrderItem[] })[]>([])
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createSupabaseClient()
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [orders, setOrders] = useState<
+    (Order & { order_items?: OrderItem[] })[]
+  >([]);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createSupabaseClient();
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth')
-      return
+      router.push("/auth");
+      return;
     }
 
     if (user) {
-      loadOrders()
+      loadOrders();
     }
-  }, [user, authLoading, router])
+  }, [user, authLoading, router]);
 
   const loadOrders = async () => {
-    if (!user) return
+    if (!user) return;
 
     try {
       const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-      if (ordersError) throw ordersError
+      if (ordersError) throw ordersError;
 
       // Load order items for each order
       const ordersWithItems = await Promise.all(
         (ordersData || []).map(async (order) => {
           const { data: itemsData } = await supabase
-            .from('order_items')
-            .select('*, products(*)')
-            .eq('order_id', order.id)
+            .from("order_items")
+            .select("*, products(*)")
+            .eq("order_id", order.id);
 
           return {
             ...order,
             order_items: itemsData || [],
-          }
+          };
         })
-      )
+      );
 
-      setOrders(ordersWithItems)
+      setOrders(ordersWithItems);
     } catch (error) {
-      console.error('Error loading orders:', error)
+      console.error("Error loading orders:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-6 h-6 text-green-600" />
-      case 'processing':
-        return <Clock className="w-6 h-6 text-blue-600" />
-      case 'cancelled':
-        return <XCircle className="w-6 h-6 text-red-600" />
+      case "completed":
+        return <CheckCircle className="w-6 h-6 text-green-600" />;
+      case "processing":
+        return <Clock className="w-6 h-6 text-blue-600" />;
+      case "cancelled":
+        return <XCircle className="w-6 h-6 text-red-600" />;
       default:
-        return <Package className="w-6 h-6 text-yellow-600" />
+        return <Package className="w-6 h-6 text-yellow-600" />;
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'processing':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200'
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "processing":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
     }
-  }
+  };
 
   if (authLoading || loading) {
     return (
@@ -99,18 +108,22 @@ export default function OrdersPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-2">My Orders</h1>
-        <p className="text-gray-600">View your order history and track shipments</p>
+        <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-2">
+          My Orders
+        </h1>
+        <p className="text-gray-600">
+          View your order history and track shipments
+        </p>
       </div>
 
       {orders.length === 0 ? (
@@ -118,9 +131,16 @@ export default function OrdersPage() {
           <div className="w-32 h-32 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Package className="w-16 h-16 text-indigo-600" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">No orders yet</h2>
-          <p className="text-gray-600 mb-8 text-lg">Start shopping to see your orders here</p>
-          <Link href="/" className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-4">
+          <h2 className="text-3xl font-bold text-gray-900 mb-3">
+            No orders yet
+          </h2>
+          <p className="text-gray-600 mb-8 text-lg">
+            Start shopping to see your orders here
+          </p>
+          <Link
+            href="/"
+            className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-4"
+          >
             Start Shopping
           </Link>
         </div>
@@ -134,7 +154,9 @@ export default function OrdersPage() {
               {/* Order Header */}
               <div
                 className="p-6 cursor-pointer"
-                onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                onClick={() =>
+                  setExpandedOrder(expandedOrder === order.id ? null : order.id)
+                }
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex-1">
@@ -145,15 +167,19 @@ export default function OrdersPage() {
                       </h3>
                     </div>
                     <p className="text-gray-600">
-                      Placed on {order.created_at
-                        ? new Date(order.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : 'N/A'}
+                      Placed on{" "}
+                      {order.created_at
+                        ? new Date(order.created_at).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )
+                        : "N/A"}
                     </p>
                   </div>
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -163,7 +189,8 @@ export default function OrdersPage() {
                       )}`}
                     >
                       {getStatusIcon(order.status)}
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      {order.status.charAt(0).toUpperCase() +
+                        order.status.slice(1)}
                     </span>
                     <div className="text-right">
                       <p className="text-sm text-gray-600 mb-1">Total</p>
@@ -200,12 +227,14 @@ export default function OrdersPage() {
                           />
                         ) : (
                           <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">No Image</span>
+                            <span className="text-gray-400 text-xs">
+                              No Image
+                            </span>
                           </div>
                         )}
                         <div className="flex-1">
                           <h5 className="font-semibold text-gray-900">
-                            {item.products?.name || 'Product'}
+                            {item.products?.name || "Product"}
                           </h5>
                           <p className="text-sm text-gray-600">
                             Quantity: {item.quantity} × ${item.price.toFixed(2)}
@@ -224,5 +253,5 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
