@@ -1,15 +1,85 @@
+'use client'
+
 import Link from "next/link";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import ProductGrid from "@/components/ProductGrid";
 import SearchBar from "@/components/SearchBar";
+import CategoryFilter from "@/components/CategoryFilter";
+import Pagination from "@/components/Pagination";
 import { Sparkles, Truck, Shield, Star, TrendingUp } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Product } from "@/types";
+import { useSearchParams } from "next/navigation";
 
-export default async function Home() {
-  const supabase = createServerSupabaseClient();
-  const { data: products } = await supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
+export default function Home() {
+  const searchParams = useSearchParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 24; // Increased from 12 to show more products
+  const supabase = createSupabaseClient();
+
+  // Initialize category from URL parameter
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error loading products:', error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter products by category
+  const filteredProducts = useMemo(() => {
+    if (!selectedCategory) return products;
+    return products.filter(p => p.category === selectedCategory);
+  }, [products, selectedCategory]);
+
+  // Paginate products
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * productsPerPage;
+    const endIndex = startIndex + productsPerPage;
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage, productsPerPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  // Reset to page 1 when category changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -74,7 +144,28 @@ export default async function Home() {
           </p>
         </div>
 
-        <ProductGrid products={products || []} />
+        {/* Category Filter */}
+        <CategoryFilter
+          products={products}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
+
+        {/* Products Count */}
+        <div className="text-center mb-6 text-gray-600">
+          Showing {paginatedProducts.length} of {filteredProducts.length} products
+          {selectedCategory && ` in ${selectedCategory}`}
+        </div>
+
+        {/* Product Grid */}
+        <ProductGrid products={paginatedProducts} />
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </section>
 
       {/* Features Section - Enhanced */}
