@@ -31,7 +31,10 @@ export default function Navbar() {
       const totalItems = data?.reduce((sum, item) => sum + item.quantity, 0) || 0
       setCartCount(totalItems)
     } catch (error) {
-      console.error('Error loading cart count:', error)
+      // Error loading cart count - silently fail in production
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error loading cart count:', error)
+      }
     }
   }, [user, supabase])
 
@@ -51,12 +54,15 @@ export default function Navbar() {
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('Cart change detected:', payload)
+            // Cart change detected - reload cart count
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Cart change detected:', payload)
+            }
             loadCartCount()
           }
         )
         .subscribe((status) => {
-          console.log('Subscription status:', status)
+          // Subscription status monitoring (removed for production)
         })
 
       // Also poll every 2 seconds as backup

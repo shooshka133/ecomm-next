@@ -6,6 +6,8 @@ import { useAuth } from "@/components/AuthProvider";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { UserProfile, UserAddress } from "@/types";
 import { User, MapPin, Plus, Edit, Trash2, Check, X } from "lucide-react";
+import { toast } from "@/components/Toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ProfilePage() {
   const [fullUser, setFullUser] = useState<any>(null);
@@ -16,7 +18,9 @@ export default function ProfilePage() {
       const data = await res.json();
       setFullUser(data);
     } catch (error) {
-      console.error("Failed to load full user:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Failed to load full user:", error);
+      }
     }
   };
 
@@ -30,6 +34,8 @@ export default function ProfilePage() {
     null
   );
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
   const supabase = createSupabaseClient();
 
   // Form state
@@ -84,9 +90,18 @@ export default function ProfilePage() {
           .select()
           .single();
         setProfile(newProfile);
+      } else {
+        // Initialize formData with profile data
+        setFormData(prev => ({
+          ...prev,
+          full_name: data.full_name || "",
+          phone: data.phone || "",
+        }));
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error loading profile:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -106,28 +121,55 @@ export default function ProfilePage() {
       if (error) throw error;
       setAddresses(data || []);
     } catch (error) {
-      console.error("Error loading addresses:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error loading addresses:", error);
+      }
     }
   };
 
   const handleSaveProfile = async () => {
     if (!user) return;
 
+    // Get current values from formData (which is now synced with profile)
+    const fullName = (formData.full_name || "").trim();
+    const phone = (formData.phone || "").trim();
+
+    // Validate that at least one field has data
+    if (!fullName && !phone) {
+      toast.error("Please enter at least your name or phone number before saving.");
+      return;
+    }
+
+    // Check if data has actually changed
+    const currentFullName = (profile?.full_name || "").trim();
+    const currentPhone = (profile?.phone || "").trim();
+    
+    if (fullName === currentFullName && phone === currentPhone) {
+      toast.info("No changes to save.");
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase.from("user_profiles").upsert({
         id: user.id,
-        full_name: formData.full_name,
-        phone: formData.phone,
+        full_name: fullName || null,
+        phone: phone || null,
         updated_at: new Date().toISOString(),
       });
 
       if (error) throw error;
+      
+      // Reload profile to get updated data
       await loadProfile();
-      alert("Profile updated successfully!");
+      
+      // Show success message
+      toast.success("Profile updated successfully! ✨");
     } catch (error) {
-      console.error("Error saving profile:", error);
-      alert("Failed to update profile");
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error saving profile:", error);
+      }
+      toast.error("Oops! We couldn't update your profile. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -137,13 +179,79 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!user) return;
 
+    // Validate required fields
+    if (!formData.full_name?.trim()) {
+      toast.error("Please enter the recipient's full name.");
+      return;
+    }
+
+    if (!formData.phone?.trim()) {
+      toast.error("Please enter a phone number.");
+      return;
+    }
+
+    if (!formData.address_line1?.trim()) {
+      toast.error("Please enter the street address.");
+      return;
+    }
+
+    if (!formData.city?.trim()) {
+      toast.error("Please enter the city.");
+      return;
+    }
+
+    if (!formData.state?.trim()) {
+      toast.error("Please enter the state or province.");
+      return;
+    }
+
+    if (!formData.postal_code?.trim()) {
+      toast.error("Please enter the postal code.");
+      return;
+    }
+
+    if (!formData.country?.trim()) {
+      toast.error("Please enter the country.");
+      return;
+    }
+
+    // Prepare address data
+    const addressData = {
+      user_id: user.id,
+      full_name: formData.full_name.trim(),
+      phone: formData.phone.trim(),
+      label: formData.label.trim() || null,
+      address_line1: formData.address_line1.trim(),
+      address_line2: formData.address_line2.trim() || null,
+      city: formData.city.trim(),
+      state: formData.state.trim(),
+      postal_code: formData.postal_code.trim(),
+      country: formData.country.trim(),
+      is_default: formData.is_default,
+    };
+
+    // Check if data has actually changed (only for editing)
+    if (editingAddress) {
+      const hasChanged = 
+        addressData.full_name !== editingAddress.full_name ||
+        addressData.phone !== editingAddress.phone ||
+        (addressData.label || "") !== (editingAddress.label || "") ||
+        addressData.address_line1 !== editingAddress.address_line1 ||
+        (addressData.address_line2 || "") !== (editingAddress.address_line2 || "") ||
+        addressData.city !== editingAddress.city ||
+        addressData.state !== editingAddress.state ||
+        addressData.postal_code !== editingAddress.postal_code ||
+        addressData.country !== editingAddress.country ||
+        addressData.is_default !== editingAddress.is_default;
+
+      if (!hasChanged) {
+        toast.info("No changes to save.");
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      const addressData = {
-        user_id: user.id,
-        ...formData,
-      };
-
       if (editingAddress) {
         const { error } = await supabase
           .from("user_addresses")
@@ -151,39 +259,61 @@ export default function ProfilePage() {
           .eq("id", editingAddress.id);
 
         if (error) throw error;
+        toast.success("Address updated successfully! 🎉");
       } else {
         const { error } = await supabase
           .from("user_addresses")
           .insert(addressData);
 
         if (error) throw error;
+        toast.success("Address added successfully! 🎉");
       }
 
       await loadAddresses();
       resetForm();
-      alert(editingAddress ? "Address updated!" : "Address added!");
-    } catch (error) {
-      console.error("Error saving address:", error);
-      alert("Failed to save address");
+    } catch (error: any) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error saving address:", error);
+      }
+      
+      // Provide more specific error messages
+      if (error?.code === '23505') {
+        toast.error("This address already exists. Please check your saved addresses.");
+      } else if (error?.message) {
+        toast.error(`Unable to save address: ${error.message}`);
+      } else {
+        toast.error("We couldn't save your address. Please check the information and try again.");
+      }
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteAddress = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this address?")) return;
+  const handleDeleteAddress = (id: string) => {
+    setAddressToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteAddress = async () => {
+    if (!addressToDelete) return;
 
     try {
       const { error } = await supabase
         .from("user_addresses")
         .delete()
-        .eq("id", id);
+        .eq("id", addressToDelete);
 
       if (error) throw error;
       await loadAddresses();
+      toast.success("Address deleted successfully");
     } catch (error) {
-      console.error("Error deleting address:", error);
-      alert("Failed to delete address");
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error deleting address:", error);
+      }
+      toast.error("We couldn't delete the address. Please try again.");
+    } finally {
+      setShowDeleteConfirm(false);
+      setAddressToDelete(null);
     }
   };
 
@@ -203,9 +333,12 @@ export default function ProfilePage() {
 
       if (error) throw error;
       await loadAddresses();
+      toast.success("Default address updated! This will be used for future orders.");
     } catch (error) {
-      console.error("Error setting default address:", error);
-      alert("Failed to set default address");
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Error setting default address:", error);
+      }
+      toast.error("We couldn't set the default address. Please try again.");
     }
   };
 
@@ -259,7 +392,7 @@ export default function ProfilePage() {
   if (!user) {
     return null;
   }
-  console.log("User object:", user);
+  // User object logging removed for production
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
@@ -651,6 +784,21 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete Address"
+        message="Are you sure you want to delete this address? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+        onConfirm={confirmDeleteAddress}
+        onCancel={() => {
+          setShowDeleteConfirm(false);
+          setAddressToDelete(null);
+        }}
+      />
     </div>
   );
 }

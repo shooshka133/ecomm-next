@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/AuthProvider'
 import Navbar from '@/components/Navbar'
+import ToastWrapper from '@/components/ToastWrapper'
 import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -47,6 +48,7 @@ export default function RootLayout({
             <main className="min-h-screen">
               {children}
             </main>
+            <ToastWrapper />
             <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-20">
               <div className="container mx-auto px-4 py-16">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">

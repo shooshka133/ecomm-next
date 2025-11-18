@@ -9,11 +9,27 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Logging helper (replace with proper logging service in production)
+const log = (message: string, data?: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(message, data || '')
+  }
+  // In production, send to logging service (e.g., Sentry, LogRocket)
+}
+
+const logError = (message: string, error?: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.error(message, error || '')
+  }
+  // In production, send to error tracking service
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 
   if (!signature) {
+    logError('Webhook: No signature provided')
     return NextResponse.json(
       { error: 'No signature' },
       { status: 400 }
@@ -29,9 +45,9 @@ export async function POST(request: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET || ''
     )
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message)
+    logError('Webhook signature verification failed', err.message)
     return NextResponse.json(
-      { error: `Webhook Error: ${err.message}` },
+      { error: 'Invalid signature' },
       { status: 400 }
     )
   }
@@ -41,10 +57,8 @@ export async function POST(request: NextRequest) {
     const userId = session.metadata?.user_id
     const sessionId = session.id
 
-    console.log('Webhook received - Session:', sessionId, 'User ID:', userId)
-
     if (!userId) {
-      console.error('No user_id in session metadata')
+      logError('Webhook: No user_id in session metadata', { sessionId })
       return NextResponse.json({ error: 'No user_id' }, { status: 400 })
     }
 
@@ -56,7 +70,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingOrder) {
-      console.log('Order already exists for session:', sessionId, 'Order ID:', existingOrder.id)
+      log('Webhook: Order already exists', { sessionId, orderId: existingOrder.id })
       return NextResponse.json({ 
         received: true, 
         message: 'Order already exists',
@@ -71,7 +85,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userId)
 
     if (cartError) {
-      console.error('Error fetching cart items:', cartError)
+      logError('Webhook: Error fetching cart items', cartError)
       return NextResponse.json(
         { error: 'Failed to fetch cart items' },
         { status: 500 }
@@ -79,8 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!cartItems || cartItems.length === 0) {
-      console.error('No cart items found for user:', userId)
-      // Still return success to avoid webhook retries, but log the issue
+      log('Webhook: No cart items found', { userId })
       return NextResponse.json({ received: true, warning: 'No cart items found' })
     }
 
@@ -90,8 +103,6 @@ export async function POST(request: NextRequest) {
       0
     )
 
-    console.log('Creating order for user:', userId, 'Total:', total, 'Session:', sessionId)
-
     // Create order with session_id as payment_intent_id to track it
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -99,16 +110,16 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         total,
         status: 'processing',
-        stripe_payment_intent_id: sessionId, // Use session ID to track
+        stripe_payment_intent_id: sessionId,
       })
       .select()
       .single()
 
     if (orderError) {
-      console.error('Error creating order:', orderError)
+      logError('Webhook: Error creating order', orderError)
       // Check if it's a duplicate error
-      if (orderError.code === '23505') { // PostgreSQL unique constraint violation
-        console.log('Duplicate order prevented by database constraint')
+      if (orderError.code === '23505') {
+        log('Webhook: Duplicate order prevented by database constraint')
         return NextResponse.json({ 
           received: true, 
           message: 'Order already exists (duplicate prevented)'
@@ -119,8 +130,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    console.log('Order created:', order.id)
 
     // Create order items
     const orderItems = cartItems.map((item: any) => ({
@@ -135,14 +144,12 @@ export async function POST(request: NextRequest) {
       .insert(orderItems)
 
     if (orderItemsError) {
-      console.error('Error creating order items:', orderItemsError)
+      logError('Webhook: Error creating order items', orderItemsError)
       return NextResponse.json(
         { error: 'Failed to create order items' },
         { status: 500 }
       )
     }
-
-    console.log('Order items created:', orderItems.length)
 
     // Clear cart
     const { error: deleteError } = await supabaseAdmin
@@ -151,16 +158,13 @@ export async function POST(request: NextRequest) {
       .eq('user_id', userId)
 
     if (deleteError) {
-      console.error('Error clearing cart:', deleteError)
-      // Don't fail the webhook if cart clearing fails
-    } else {
-      console.log('Cart cleared for user:', userId)
+      logError('Webhook: Error clearing cart', deleteError)
     }
 
     return NextResponse.json({ 
       received: true, 
       orderId: order.id,
-      message: 'Order created and cart cleared successfully'
+      message: 'Order created successfully'
     })
   }
 

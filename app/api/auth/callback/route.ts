@@ -9,9 +9,22 @@ export async function GET(request: Request) {
   const errorDescription = requestUrl.searchParams.get('error_description')
   const next = requestUrl.searchParams.get('next') || '/'
 
+  // Logging helper for development only
+  const logError = (message: string, data?: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(message, data || '')
+    }
+  }
+
+  const log = (message: string, data?: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(message, data || '')
+    }
+  }
+
   // Handle OAuth errors
   if (error) {
-    console.error('OAuth error:', error, errorDescription)
+    logError('OAuth error:', { error, errorDescription })
     return NextResponse.redirect(
       new URL(`/auth?error=${encodeURIComponent(errorDescription || error)}`, requestUrl.origin)
     )
@@ -25,7 +38,7 @@ export async function GET(request: Request) {
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
       
       if (exchangeError) {
-        console.error('Error exchanging code for session:', exchangeError)
+        logError('Error exchanging code for session:', exchangeError)
         return NextResponse.redirect(
           new URL(`/auth?error=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
         )
@@ -33,7 +46,7 @@ export async function GET(request: Request) {
 
       // Successfully authenticated
       if (data.session) {
-        console.log('OAuth success - Session created for user:', data.session.user.email)
+        log('OAuth success - Session created for user:', data.session.user.email)
         
         // Create redirect response
         const response = NextResponse.redirect(new URL(next, requestUrl.origin))
@@ -60,13 +73,13 @@ export async function GET(request: Request) {
         
         return response
       } else {
-        console.error('No session returned from exchangeCodeForSession')
+        logError('No session returned from exchangeCodeForSession')
         return NextResponse.redirect(
           new URL('/auth?error=No session created', requestUrl.origin)
         )
       }
     } catch (err: any) {
-      console.error('Unexpected error in callback:', err)
+      logError('Unexpected error in callback:', err)
       return NextResponse.redirect(
         new URL(`/auth?error=${encodeURIComponent(err.message || 'authentication_failed')}`, requestUrl.origin)
       )

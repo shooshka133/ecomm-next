@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 
+// Logging helper
+const logError = (message: string, error?: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.error(message, error || '')
+  }
+  // In production, send to error tracking service
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
@@ -16,22 +24,46 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { items, address_id } = body
 
-    if (!items || items.length === 0) {
+    // Validate input
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { error: 'Cart is empty' },
         { status: 400 }
       )
     }
 
-    // Get address if provided
+    // Validate each item
+    for (const item of items) {
+      if (!item.product_id || !item.quantity || !item.price) {
+        return NextResponse.json(
+          { error: 'Invalid item data' },
+          { status: 400 }
+        )
+      }
+      if (item.quantity < 1 || item.price < 0) {
+        return NextResponse.json(
+          { error: 'Invalid quantity or price' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Get address if provided and validate ownership
     let shippingAddress = null
     if (address_id) {
-      const { data: address } = await supabase
+      const { data: address, error: addressError } = await supabase
         .from('user_addresses')
         .select('*')
         .eq('id', address_id)
         .eq('user_id', user.id)
         .single()
+      
+      if (addressError || !address) {
+        return NextResponse.json(
+          { error: 'Invalid address' },
+          { status: 400 }
+        )
+      }
       
       shippingAddress = address
     }
@@ -41,6 +73,14 @@ export async function POST(request: NextRequest) {
       (sum: number, item: any) => sum + item.price * item.quantity,
       0
     )
+
+    // Validate total
+    if (total <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid total amount' },
+        { status: 400 }
+      )
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -69,9 +109,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sessionId: session.id })
   } catch (error: any) {
-    console.error('Checkout error:', error)
+    logError('Checkout error', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to create checkout session' },
+      { error: 'Failed to create checkout session' },
       { status: 500 }
     )
   }

@@ -18,11 +18,117 @@ export default function ProductDetailPage() {
   const [adding, setAdding] = useState(false)
   const [added, setAdded] = useState(false)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
   const supabase = createSupabaseClient()
 
   useEffect(() => {
     loadProduct()
   }, [params.id])
+
+  useEffect(() => {
+    if (user && product) {
+      checkWishlistStatus()
+    } else {
+      setIsWishlisted(false)
+    }
+  }, [user, product?.id])
+
+  const checkWishlistStatus = async () => {
+    if (!user || !product) return
+
+    try {
+      const { data, error } = await supabase
+        .from('wishlist')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error checking wishlist:', error)
+        }
+        return
+      }
+
+      setIsWishlisted(!!data)
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error checking wishlist:', error)
+      }
+    }
+  }
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      router.push('/auth')
+      return
+    }
+
+    if (!product) return
+
+    setWishlistLoading(true)
+    try {
+      if (isWishlisted) {
+        // Remove from wishlist
+        const { error } = await supabase
+          .from('wishlist')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id)
+
+        if (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error removing from wishlist:', error)
+          }
+          // Check if table doesn't exist
+          if (error.message?.includes('does not exist') || error.code === '42P01') {
+            alert('Wishlist table not found! Please run the SQL script in Supabase. See WISHLIST_SETUP.md for instructions.')
+          } else {
+            alert('Failed to remove from wishlist. Please try again.')
+          }
+          return
+        }
+        setIsWishlisted(false)
+      } else {
+        // Add to wishlist
+        const { error } = await supabase
+          .from('wishlist')
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+          })
+
+        if (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error adding to wishlist:', error)
+          }
+          // Check if table doesn't exist
+          if (error.message?.includes('does not exist') || error.code === '42P01') {
+            alert('Wishlist table not found! Please run the SQL script in Supabase. See WISHLIST_SETUP.md for instructions.')
+          } else {
+            alert('Failed to add to wishlist. Please try again.')
+          }
+          return
+        }
+        setIsWishlisted(true)
+      }
+    } catch (error: any) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error toggling wishlist:', error)
+      }
+      // Check if table doesn't exist
+      if (error?.message?.includes('does not exist') || error?.code === '42P01') {
+        alert('Wishlist table not found! Please run the SQL script in Supabase. See WISHLIST_SETUP.md for instructions.')
+      } else {
+        alert('An error occurred. Please try again.')
+      }
+      // Revert state on error
+      setIsWishlisted(!isWishlisted)
+    } finally {
+      setWishlistLoading(false)
+    }
+  }
 
   const loadProduct = async () => {
     try {
@@ -35,7 +141,9 @@ export default function ProductDetailPage() {
       if (error) throw error
       setProduct(data)
     } catch (error) {
-      console.error('Error loading product:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error loading product:', error)
+      }
     } finally {
       setLoading(false)
     }
@@ -80,7 +188,9 @@ export default function ProductDetailPage() {
       setAdded(true)
       setTimeout(() => setAdded(false), 2000)
     } catch (error) {
-      console.error('Error adding to cart:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error adding to cart:', error)
+      }
       alert('Failed to add to cart')
     } finally {
       setAdding(false)
@@ -154,11 +264,12 @@ export default function ProductDetailPage() {
               </span>
               {user && (
                 <button
-                  onClick={() => setIsWishlisted(!isWishlisted)}
-                  className="p-3 border-2 border-gray-300 rounded-lg hover:border-pink-500 transition-colors"
+                  onClick={handleToggleWishlist}
+                  disabled={wishlistLoading}
+                  className="p-3 border-2 border-gray-300 rounded-lg hover:border-pink-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Heart
-                    className={`w-6 h-6 ${
+                    className={`w-6 h-6 transition-colors ${
                       isWishlisted ? 'fill-pink-500 text-pink-500' : 'text-gray-400'
                     }`}
                   />

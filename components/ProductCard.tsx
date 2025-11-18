@@ -4,7 +4,7 @@ import { Product } from '@/types'
 import { useAuth } from './AuthProvider'
 import { useRouter } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShoppingCart, Check, Heart, Eye } from 'lucide-react'
 import Link from 'next/link'
 
@@ -18,7 +18,115 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [adding, setAdding] = useState(false)
   const [added, setAdded] = useState(false)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [wishlistLoading, setWishlistLoading] = useState(false)
   const supabase = createSupabaseClient()
+
+  // Load wishlist status when component mounts or user changes
+  useEffect(() => {
+    if (user && product) {
+      checkWishlistStatus()
+    } else {
+      setIsWishlisted(false)
+    }
+  }, [user, product?.id])
+
+  const checkWishlistStatus = async () => {
+    if (!user) return
+
+    try {
+      const { data, error } = await supabase
+        .from('wishlist')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error checking wishlist:', error)
+        }
+        return
+      }
+
+      setIsWishlisted(!!data)
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error checking wishlist:', error)
+      }
+    }
+  }
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (!user) {
+      router.push('/auth')
+      return
+    }
+
+    setWishlistLoading(true)
+    try {
+      if (isWishlisted) {
+        // Remove from wishlist
+        const { error } = await supabase
+          .from('wishlist')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id)
+
+        if (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error removing from wishlist:', error)
+          }
+          // Check if table doesn't exist
+          if (error.message?.includes('does not exist') || error.code === '42P01') {
+            alert('Wishlist table not found! Please run the SQL script in Supabase. See WISHLIST_SETUP.md for instructions.')
+          } else {
+            alert('Failed to remove from wishlist. Please try again.')
+          }
+          return
+        }
+        setIsWishlisted(false)
+      } else {
+        // Add to wishlist
+        const { error } = await supabase
+          .from('wishlist')
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+          })
+
+        if (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error adding to wishlist:', error)
+          }
+          // Check if table doesn't exist
+          if (error.message?.includes('does not exist') || error.code === '42P01') {
+            alert('Wishlist table not found! Please run the SQL script in Supabase. See WISHLIST_SETUP.md for instructions.')
+          } else {
+            alert('Failed to add to wishlist. Please try again.')
+          }
+          return
+        }
+        setIsWishlisted(true)
+      }
+    } catch (error: any) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error toggling wishlist:', error)
+      }
+      // Check if table doesn't exist
+      if (error?.message?.includes('does not exist') || error?.code === '42P01') {
+        alert('Wishlist table not found! Please run the SQL script in Supabase. See WISHLIST_SETUP.md for instructions.')
+      } else {
+        alert('An error occurred. Please try again.')
+      }
+      // Revert state on error
+      setIsWishlisted(!isWishlisted)
+    } finally {
+      setWishlistLoading(false)
+    }
+  }
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -62,7 +170,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       setAdded(true)
       setTimeout(() => setAdded(false), 2000)
     } catch (error) {
-      console.error('Error adding to cart:', error)
+      // Error adding to cart - log in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error adding to cart:', error)
+      }
       alert('Failed to add to cart')
     } finally {
       setAdding(false)
@@ -75,12 +186,9 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Wishlist Button */}
         {user && (
           <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              setIsWishlisted(!isWishlisted)
-            }}
-            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-md hover:shadow-lg"
+            onClick={handleToggleWishlist}
+            disabled={wishlistLoading}
+            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Heart 
               className={`w-5 h-5 transition-colors ${
