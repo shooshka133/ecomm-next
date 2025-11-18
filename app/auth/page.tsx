@@ -167,7 +167,7 @@ export default function AuthPage() {
                 Reset Password
               </h2>
               <p className="text-gray-600">
-                Enter your email and we'll send you a password reset link
+                Enter your email and we&apos;ll send you a password reset link
               </p>
             </div>
 
