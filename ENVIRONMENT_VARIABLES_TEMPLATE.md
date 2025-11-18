@@ -24,7 +24,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxxxxxxxxxxxxxxxxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxx
 
 # Application Configuration
-NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NEXT_PUBLIC_APP_URL=https://shooshka.online
 NODE_ENV=production
 ```
 
@@ -54,13 +54,22 @@ NODE_ENV=production
 
 1. Go to Stripe Dashboard (LIVE mode)
 2. Developers > Webhooks
-3. Click on your webhook endpoint
-4. Copy **Signing secret** → `STRIPE_WEBHOOK_SECRET` (starts with `whsec_`)
+3. Click **"Add endpoint"** (if not created yet)
+4. **Endpoint URL:** `https://shooshka.online/api/webhook`
+5. Select event: `checkout.session.completed`
+6. Click **"Add endpoint"**
+7. Copy **Signing secret** → `STRIPE_WEBHOOK_SECRET` (starts with `whsec_`)
+8. Add this secret to your environment variables
+
+**Note:** The webhook URL is configured in Stripe Dashboard, NOT as an environment variable. Only the `STRIPE_WEBHOOK_SECRET` goes in environment variables.
 
 ### App URL
 
-- Your production domain (e.g., `https://yourstore.com`)
-- Or Vercel URL (e.g., `https://yourproject.vercel.app`)
+- **For your site:** `https://shooshka.online`
+- This is your base domain (NOT the webhook URL)
+- Used for redirects and success/cancel URLs
+
+**⚠️ Important:** The webhook URL (`https://shooshka.online/api/webhook`) is **NOT** an environment variable. It's configured in **Stripe Dashboard** → **Webhooks** → **Add endpoint**.
 
 ---
 
