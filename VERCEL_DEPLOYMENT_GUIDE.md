@@ -100,10 +100,10 @@ STRIPE_WEBHOOK_SECRET
 ```
 NEXT_PUBLIC_APP_URL
 ```
-- **Value:** Leave empty for now (we'll update after first deployment)
+- **Value:** `https://shooshka.online` (your custom domain)
 - **Environment:** Production
 
-**Note:** After first deployment, update this with your Vercel URL (e.g., `https://yourproject.vercel.app`)
+**Note:** If you don't have a custom domain yet, use your Vercel URL (e.g., `https://yourproject.vercel.app`) and update later
 
 ---
 
@@ -144,7 +144,10 @@ NEXT_PUBLIC_APP_URL
 
 1. Go to **Stripe Dashboard** → **Developers** → **Webhooks**
 2. Click **"Add endpoint"**
-3. **Endpoint URL:** `https://yourproject.vercel.app/api/webhook`
+3. **Endpoint URL:** 
+   - If using custom domain: `https://shooshka.online/api/webhook`
+   - If using Vercel URL: `https://yourproject.vercel.app/api/webhook`
+   - ⚠️ **Note:** The endpoint is `/api/webhook` (singular, not plural)
 4. Select event: **`checkout.session.completed`**
 5. Click **"Add endpoint"**
 6. Copy the **Signing secret** (starts with `whsec_`)
