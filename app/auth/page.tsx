@@ -167,7 +167,7 @@ export default function AuthPage() {
                 Reset Password
               </h2>
               <p className="text-gray-600">
-                Enter your email and we&apos;ll send you a password reset link
+                Enter your email and we&apos;ll send you a password reset link.
               </p>
             </div>
 
@@ -405,7 +405,7 @@ export default function AuthPage() {
             >
               {isSignUp
                 ? 'Already have an account? Sign in'
-                : "Don't have an account? Sign up"}
+                : "Don&apos;t have an account? Sign up"}
             </button>
           </div>
         </div>

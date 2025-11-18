@@ -86,7 +86,7 @@ export default function SearchBar({ products }: SearchBarProps) {
 
       {isFocused && searchTerm && filteredProducts.length === 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-8 text-center z-50">
-          <p className="text-gray-500">No products found matching &quot;{searchTerm}&quot;</p>
+          <p className="text-gray-500">No products found matching &ldquo;{searchTerm}&rdquo;</p>
         </div>
       )}
     </div>
