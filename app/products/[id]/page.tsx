@@ -97,9 +97,9 @@ export default function ProductDetailPage() {
         await checkWishlistStatus()
       } else {
         // Add to wishlist
+        // @ts-ignore - Supabase type inference issue
         const { error } = await supabase
           .from('wishlist')
-          // @ts-expect-error - Supabase type inference issue
           .insert({
             user_id: user.id,
             product_id: product.id,
@@ -178,16 +178,16 @@ export default function ProductDetailPage() {
       if (existingItem) {
         // Update quantity
         const existing = existingItem as { id: string; quantity: number }
+        // @ts-ignore - Supabase type inference issue
         await supabase
           .from('cart_items')
-          // @ts-expect-error - Supabase type inference issue
           .update({ quantity: existing.quantity + quantity })
           .eq('id', existing.id)
       } else {
         // Add new item
+        // @ts-ignore - Supabase type inference issue
         await supabase
           .from('cart_items')
-          // @ts-expect-error - Supabase type inference issue
           .insert({
             user_id: user.id,
             product_id: product.id,
