@@ -21,27 +21,49 @@ export const useAuth = () => useContext(AuthContext)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createSupabaseClient()
 
   useEffect(() => {
+    // Get Supabase client inside useEffect to ensure it's only created once
+    const supabase = createSupabaseClient()
+    
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initializeSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
       setLoading(false)
-    })
+    }
+    
+    initializeSession()
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Log auth events in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Auth state changed:', event, session?.user?.email)
+      }
+      
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // If session was just set (e.g., after OAuth), refresh to ensure consistency
+      if (event === 'SIGNED_IN' && session) {
+        // Small delay to ensure cookies are fully set
+        setTimeout(async () => {
+          const { data: { session: refreshedSession } } = await supabase.auth.getSession()
+          if (refreshedSession) {
+            setUser(refreshedSession.user)
+          }
+        }, 100)
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [])
 
   const signOut = async () => {
+    const supabase = createSupabaseClient()
     await supabase.auth.signOut()
     setUser(null)
   }

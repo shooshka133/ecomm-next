@@ -28,7 +28,7 @@ export default function Navbar() {
 
       if (error) throw error
 
-      const totalItems = data?.reduce((sum, item) => sum + item.quantity, 0) || 0
+      const totalItems = (data as { quantity: number }[] | null)?.reduce((sum, item) => sum + item.quantity, 0) || 0
       setCartCount(totalItems)
     } catch (error) {
       // Error loading cart count - silently fail in production
@@ -100,8 +100,8 @@ export default function Navbar() {
   return (
     <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-200">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <Link href="/" className="flex items-center gap-3 group">
+        <div className="flex justify-between items-center py-4 gap-4">
+          <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
             <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
               <span className="text-white font-bold text-xl">E</span>
             </div>
@@ -111,33 +111,26 @@ export default function Navbar() {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link 
-              href="/" 
-              className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group"
-            >
-              Products
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
-            </Link>
+          <div className="hidden md:flex items-center gap-3 lg:gap-4 min-w-0 flex-1 justify-end">
+            {/* Core Navigation - Always visible */}
+            <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
+              <Link 
+                href="/" 
+                className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group whitespace-nowrap"
+              >
+                Products
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
+              </Link>
+            </div>
             
-            {/* Wishlist - Always visible, never hidden - positioned before conditional */}
-            <Link 
-              key="wishlist-link"
-              href="/wishlist" 
-              className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group flex-shrink-0"
-              style={{ visibility: 'visible', display: 'block' }}
-            >
-              Wishlist
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
-            </Link>
-            
+            {/* User-specific items */}
             {loading ? (
-              <div className="text-gray-500">Loading...</div>
+              <div className="text-gray-500 whitespace-nowrap ml-3">Loading...</div>
             ) : user ? (
-              <>
+              <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0 ml-3">
                 <Link 
                   href="/cart" 
-                  className="relative flex items-center gap-1 text-gray-700 hover:text-indigo-600 font-medium transition-colors group"
+                  className="relative flex items-center gap-1 text-gray-700 hover:text-indigo-600 font-medium transition-colors group whitespace-nowrap"
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>Cart</span>
@@ -149,38 +142,38 @@ export default function Navbar() {
                 </Link>
                 <Link 
                   href="/orders" 
-                  className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group"
+                  className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group whitespace-nowrap"
                 >
                   Orders
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
                 </Link>
                 <Link 
                   href="/profile" 
-                  className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group"
+                  className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group whitespace-nowrap"
                 >
                   Profile
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
                 </Link>
-                <div className="flex items-center gap-4 pl-4 border-l border-gray-200">
+                <div className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-3 border-l border-gray-200 flex-shrink-0">
                   <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-md">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
                       <User className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-gray-700 font-medium hidden lg:block">{user.email?.split('@')[0]}</span>
+                    <span className="text-gray-700 font-medium hidden xl:block whitespace-nowrap text-sm">{user.email?.split('@')[0]}</span>
                   </div>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-all font-medium shadow-md hover:shadow-lg"
+                    className="flex items-center gap-1 lg:gap-2 bg-red-500 text-white px-2 lg:px-3 py-2 rounded-lg hover:bg-red-600 transition-all font-medium shadow-md hover:shadow-lg flex-shrink-0 whitespace-nowrap text-sm"
                   >
                     <LogOut className="w-4 h-4" />
                     <span className="hidden lg:inline">Sign Out</span>
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
               <Link
                 href="/auth"
-                className="btn-primary"
+                className="btn-primary ml-3 flex-shrink-0"
               >
                 Sign In
               </Link>
@@ -206,14 +199,6 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Products
-              </Link>
-              {/* Wishlist - Always visible */}
-              <Link 
-                href="/wishlist" 
-                className="text-gray-700 hover:text-indigo-600 font-medium flex-shrink-0"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Wishlist
               </Link>
               {user && (
                 <>

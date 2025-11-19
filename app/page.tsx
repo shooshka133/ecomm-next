@@ -9,16 +9,56 @@ import Pagination from "@/components/Pagination";
 import { Sparkles, Truck, Shield, Star, TrendingUp } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Product } from "@/types";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function Home() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 24; // Increased from 12 to show more products
   const supabase = createSupabaseClient();
+
+  // Handle OAuth callback success - refresh session and remove query param
+  useEffect(() => {
+    const authSuccess = searchParams.get('auth');
+    if (authSuccess === 'success') {
+      // Force refresh the session after OAuth callback
+      const refreshSession = async () => {
+        try {
+          // Wait a bit for cookies to be set
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Get the session to trigger AuthProvider update
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session) {
+            // Session is valid, remove the query param
+            router.replace('/');
+            // Trigger a page refresh to ensure AuthProvider picks up the session
+            router.refresh();
+          } else {
+            // No session yet, try once more after a delay
+            setTimeout(async () => {
+              const { data: { session: retrySession } } = await supabase.auth.getSession();
+              if (retrySession) {
+                router.replace('/');
+                router.refresh();
+              }
+            }, 1000);
+          }
+        } catch (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error refreshing session after OAuth:', error);
+          }
+        }
+      };
+      
+      refreshSession();
+    }
+  }, [searchParams, router, supabase]);
 
   // Initialize category from URL parameter
   useEffect(() => {
