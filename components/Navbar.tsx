@@ -120,6 +120,15 @@ export default function Navbar() {
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
             </Link>
             
+            {/* Wishlist - Always visible */}
+            <Link 
+              href="/wishlist" 
+              className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group"
+            >
+              Wishlist
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
+            </Link>
+            
             {loading ? (
               <div className="text-gray-500">Loading...</div>
             ) : user ? (
@@ -195,6 +204,14 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Products
+              </Link>
+              {/* Wishlist - Always visible */}
+              <Link 
+                href="/wishlist" 
+                className="text-gray-700 hover:text-indigo-600 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Wishlist
               </Link>
               {user && (
                 <>

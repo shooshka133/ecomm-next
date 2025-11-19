@@ -48,17 +48,20 @@ export async function GET(request: Request) {
       if (data.session) {
         log('OAuth success - Session created for user:', data.session.user.email)
         
-        // Create redirect response
-        const response = NextResponse.redirect(new URL(next, requestUrl.origin))
-        
         // The session cookies are automatically set by exchangeCodeForSession
-        // But we can also manually ensure they're set
+        // Create redirect response - redirect to home page, not auth page
+        const redirectUrl = next === '/' ? '/' : next
+        const response = NextResponse.redirect(new URL(redirectUrl, requestUrl.origin))
+        
+        // Ensure session cookies are properly set
+        // Supabase auth helpers should handle this, but we ensure it's set
         if (data.session.access_token) {
           response.cookies.set('sb-access-token', data.session.access_token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
+            maxAge: 60 * 60 * 24 * 7, // 7 days
           })
         }
         
@@ -68,6 +71,7 @@ export async function GET(request: Request) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
           })
         }
         

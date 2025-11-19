@@ -4,7 +4,7 @@ import { Product } from '@/types'
 import { useAuth } from './AuthProvider'
 import { useRouter } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ShoppingCart, Check, Heart, Eye } from 'lucide-react'
 import Link from 'next/link'
 
@@ -28,17 +28,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   // Show read more for descriptions longer than 60 characters (approximately 2-3 lines)
   const needsTruncation = descriptionLength > 60 && product.description
 
-  // Load wishlist status when component mounts or user changes
-  useEffect(() => {
-    if (user && product) {
-      checkWishlistStatus()
-    } else {
+  const checkWishlistStatus = useCallback(async () => {
+    if (!user || !product) {
       setIsWishlisted(false)
+      return
     }
-  }, [user, product?.id])
-
-  const checkWishlistStatus = async () => {
-    if (!user) return
 
     try {
       const { data, error } = await supabase
@@ -52,6 +46,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         if (process.env.NODE_ENV === 'development') {
           console.error('Error checking wishlist:', error)
         }
+        setIsWishlisted(false)
         return
       }
 
@@ -60,8 +55,14 @@ export default function ProductCard({ product }: ProductCardProps) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error checking wishlist:', error)
       }
+      setIsWishlisted(false)
     }
-  }
+  }, [user, product, supabase])
+
+  // Load wishlist status when component mounts or user/product changes
+  useEffect(() => {
+    checkWishlistStatus()
+  }, [checkWishlistStatus])
 
   const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -95,6 +96,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           return
         }
         setIsWishlisted(false)
+        // Refresh status to ensure consistency
+        await checkWishlistStatus()
       } else {
         // Add to wishlist
         const { error } = await supabase
@@ -117,6 +120,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           return
         }
         setIsWishlisted(true)
+        // Refresh status to ensure consistency
+        await checkWishlistStatus()
       }
     } catch (error: any) {
       if (process.env.NODE_ENV === 'development') {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { Product } from '@/types'
@@ -26,16 +26,11 @@ export default function ProductDetailPage() {
     loadProduct()
   }, [params.id])
 
-  useEffect(() => {
-    if (user && product) {
-      checkWishlistStatus()
-    } else {
+  const checkWishlistStatus = useCallback(async () => {
+    if (!user || !product) {
       setIsWishlisted(false)
+      return
     }
-  }, [user, product?.id])
-
-  const checkWishlistStatus = async () => {
-    if (!user || !product) return
 
     try {
       const { data, error } = await supabase
@@ -49,6 +44,7 @@ export default function ProductDetailPage() {
         if (process.env.NODE_ENV === 'development') {
           console.error('Error checking wishlist:', error)
         }
+        setIsWishlisted(false)
         return
       }
 
@@ -57,8 +53,14 @@ export default function ProductDetailPage() {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error checking wishlist:', error)
       }
+      setIsWishlisted(false)
     }
-  }
+  }, [user, product, supabase])
+
+  // Load wishlist status when component mounts or user/product changes
+  useEffect(() => {
+    checkWishlistStatus()
+  }, [checkWishlistStatus])
 
   const handleToggleWishlist = async () => {
     if (!user) {
@@ -91,6 +93,8 @@ export default function ProductDetailPage() {
           return
         }
         setIsWishlisted(false)
+        // Refresh status to ensure consistency
+        await checkWishlistStatus()
       } else {
         // Add to wishlist
         const { error } = await supabase
@@ -113,6 +117,8 @@ export default function ProductDetailPage() {
           return
         }
         setIsWishlisted(true)
+        // Refresh status to ensure consistency
+        await checkWishlistStatus()
       }
     } catch (error: any) {
       if (process.env.NODE_ENV === 'development') {

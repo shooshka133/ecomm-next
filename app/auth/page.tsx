@@ -32,14 +32,22 @@ export default function AuthPage() {
   // Check if user is already signed in (in case callback redirected but page didn't refresh)
   useEffect(() => {
     const checkSession = async () => {
+      // Small delay to ensure cookies are set after OAuth callback
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        router.push('/')
+        router.replace('/')
         router.refresh()
       }
     }
-    checkSession()
-  }, [supabase, router])
+    
+    // Only check if we're not in the middle of an OAuth flow
+    const code = searchParams.get('code')
+    if (!code) {
+      checkSession()
+    }
+  }, [supabase, router, searchParams])
 
   // Validate email format
   const validateEmail = (email: string): boolean => {
@@ -159,8 +167,10 @@ export default function AuthPage() {
     setMessage('')
 
     try {
+      // Get the correct redirect URL - use production URL if available, otherwise use current origin
+      const redirectUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${redirectUrl}/auth/reset-password`,
       })
 
       if (error) {
@@ -184,10 +194,12 @@ export default function AuthPage() {
     setMessageType('error')
     
     try {
+      // Get the correct redirect URL - use production URL if available, otherwise use current origin
+      const redirectUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // redirectTo: `${window.location.origin}/auth/callback?next=/`,
+          redirectTo: `${redirectUrl}/api/auth/callback?next=/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

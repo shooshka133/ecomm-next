@@ -16,16 +16,49 @@ export default function ResetPasswordPage() {
   const supabase = createSupabaseClient()
 
   useEffect(() => {
-    // Check if we have the necessary tokens in the URL
+    // Check if we have the necessary tokens in the URL (from Supabase email link)
     const hashParams = new URLSearchParams(window.location.hash.substring(1))
     const accessToken = hashParams.get('access_token')
     const type = hashParams.get('type')
+    const refreshToken = hashParams.get('refresh_token')
 
     if (type === 'recovery' && accessToken) {
       // User is coming from password reset email
-      // The session will be set automatically
+      // Exchange the tokens for a session
+      const exchangeSession = async () => {
+        try {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          })
+          
+          if (error) {
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Error setting session:', error)
+            }
+            setMessageType('error')
+            setMessage('Invalid or expired reset link. Please request a new one.')
+          } else {
+            // Session set successfully, user can now reset password
+            setMessageType('success')
+            setMessage('Please enter your new password below.')
+          }
+        } catch (err) {
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error exchanging tokens:', err)
+          }
+          setMessageType('error')
+          setMessage('Invalid or expired reset link. Please request a new one.')
+        }
+      }
+      
+      exchangeSession()
+    } else if (!accessToken && !type) {
+      // No tokens in URL - user might have navigated here directly
+      setMessageType('error')
+      setMessage('Invalid reset link. Please use the link from your email.')
     }
-  }, [])
+  }, [supabase])
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
