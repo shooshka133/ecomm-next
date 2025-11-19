@@ -8,12 +8,14 @@ import { Mail, Lock, ArrowRight, KeyRound } from 'lucide-react'
 export default function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error'>('error')
+  const [errors, setErrors] = useState<{email?: string; password?: string; confirmPassword?: string}>({})
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createSupabaseClient()
@@ -39,10 +41,60 @@ export default function AuthPage() {
     checkSession()
   }, [supabase, router])
 
+  // Validate email format
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  // Validate password strength
+  const validatePassword = (password: string): boolean => {
+    return password.length >= 6
+  }
+
+  // Validate form
+  const validateForm = async (): Promise<boolean> => {
+    const newErrors: {email?: string; password?: string; confirmPassword?: string} = {}
+
+    // Validate email
+    if (!email.trim()) {
+      newErrors.email = 'Email is required'
+    } else if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid email address'
+    }
+
+    // Validate password
+    if (!password) {
+      newErrors.password = 'Password is required'
+    } else if (!validatePassword(password)) {
+      newErrors.password = 'Password must be at least 6 characters long'
+    }
+
+    // Validate confirm password (only for sign up)
+    if (isSignUp) {
+      if (!confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password'
+      } else if (password !== confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match'
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setMessage('')
+    setErrors({})
+
+    // Validate form
+    const isValid = await validateForm()
+    if (!isValid) {
+      return
+    }
+
+    setLoading(true)
 
     try {
       if (isSignUp) {
@@ -50,11 +102,18 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
           },
         })
         if (error) {
           setMessageType('error')
+          // Check if email already exists
+          if (error.message.includes('already registered') || 
+              error.message.includes('User already registered') ||
+              error.message.includes('already exists')) {
+            setErrors({ email: 'An account with this email already exists. Please sign in instead.' })
+            throw new Error('An account with this email already exists. Please sign in instead.')
+          }
           throw error
         }
         
@@ -273,7 +332,139 @@ export default function AuthPage() {
             </div>
           )}
 
-          {/* Google Auth Button - Prominent at top */}
+          {/* Email/Password Form - Moved to top */}
+          <form className="space-y-4" onSubmit={handleEmailAuth}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    if (errors.email) setErrors({...errors, email: undefined})
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
+                    errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="you@example.com"
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (errors.password) setErrors({...errors, password: undefined})
+                    if (errors.confirmPassword && confirmPassword) {
+                      setErrors({...errors, confirmPassword: password === e.target.value ? undefined : 'Passwords do not match'})
+                    }
+                  }}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
+                    errors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="••••••••"
+                />
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Confirm Password - Only for Sign Up */}
+            {isSignUp && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value)
+                      if (errors.confirmPassword) {
+                        setErrors({...errors, confirmPassword: password === e.target.value ? undefined : 'Passwords do not match'})
+                      }
+                    }}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all ${
+                      errors.confirmPassword ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="••••••••"
+                  />
+                </div>
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                )}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || googleLoading}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>{isSignUp ? 'Create Account' : 'Sign In with Email'}</span>
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google Auth Button - Moved below email form */}
           <div>
             <button
               onClick={handleGoogleAuth}
@@ -311,88 +502,6 @@ export default function AuthPage() {
             </button>
           </div>
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Or sign in with email</span>
-            </div>
-          </div>
-
-          {/* Email/Password Form */}
-          <form className="space-y-4" onSubmit={handleEmailAuth}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                {!isSignUp && (
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Forgot password?
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || googleLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <span>{isSignUp ? 'Create Account' : 'Sign In with Email'}</span>
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </form>
-
           {/* Toggle Sign Up/Sign In */}
           <div className="text-center pt-4 border-t border-gray-200">
             <button
@@ -400,6 +509,9 @@ export default function AuthPage() {
               onClick={() => {
                 setIsSignUp(!isSignUp)
                 setMessage('')
+                setErrors({})
+                setPassword('')
+                setConfirmPassword('')
               }}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
