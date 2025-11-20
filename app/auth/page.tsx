@@ -110,7 +110,7 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         })
         if (error) {
@@ -199,7 +199,7 @@ export default function AuthPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${redirectUrl}/api/auth/callback?next=/`,
+          redirectTo: `${redirectUrl}/auth/callback?next=/`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
