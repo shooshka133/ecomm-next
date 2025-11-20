@@ -49,7 +49,7 @@ export async function signInWithGoogle(
       windowOrigin: window.location.origin,
       envUrl: process.env.NEXT_PUBLIC_APP_URL,
       timestamp: new Date().toISOString(),
-      test: 'custom-domain-v2'
+      test: 'custom-domain-final'
     })
 
     const { data, error } = await supabase.auth.signInWithOAuth({
