@@ -4,8 +4,8 @@ This document explains how to revert your codebase to the working version that u
 
 ## Current Working Version Information
 
-- **Commit**: Check with `git log --oneline -1` after commit
-- **Tag**: `v-working-auth-callback` (if created)
+- **Commit**: `cdcff00`
+- **Tag**: `v-working-auth-callback`
 - **Description**: Working version with `/auth/callback` - Google OAuth functional
 - **Key Change**: Uses `/auth/callback` instead of `/api/auth/callback`
 
