@@ -1,3 +1,14 @@
+import { NextResponse } from 'next/server'
+
+// This route handler is currently disabled
+// Uncomment the code below if you need to use /api/auth/callback for OAuth
+export async function GET(request: Request) {
+  // Route is disabled - redirect to auth page
+  const requestUrl = new URL(request.url)
+  return NextResponse.redirect(new URL('/auth', requestUrl.origin))
+}
+
+// Original implementation (commented out):
 // import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 // import { cookies } from 'next/headers'
 // import { NextResponse } from 'next/server'
