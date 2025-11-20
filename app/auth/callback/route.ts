@@ -1,178 +1,95 @@
-/**
- * Google OAuth Authentication Utility
- * Handles Google sign-in flow with proper error handling and logging
- */
-
-import { createSupabaseClient } from '@/lib/supabase/client'
-
-export interface GoogleOAuthOptions {
-  onSuccess?: () => void
-  onError?: (error: string) => void
-  redirectTo?: string
-}
-
-//------------------------------
-
-// response.cookies.set('sb-access-token', data.session.access_token, {
-//   httpOnly: true,
-//   secure: process.env.NODE_ENV === 'production', // false on localhost
-//   sameSite: 'lax',
-//   path: '/',
-// })
-
-//----------------------------
-// ---------- OLD IMPLEMENTATION (FULLY COMMENTED — DO NOT DELETE) ----------
-/*
-export interface GoogleOAuthResult {
-  success: boolean
-  error?: string
-  redirectUrl?: string
-}
-
-export async function signInWithGoogle(
-  options: GoogleOAuthOptions = {}
-): Promise<GoogleOAuthResult> {
-  const { onSuccess, onError, redirectTo = '/' } = options
-
-  try {
-    const supabase = createSupabaseClient()
-    
-    const redirectUrl = window.location.origin
-    const callbackUrl = `${redirectUrl}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`
-
-    console.log('🔗 [Google OAuth] Starting OAuth flow...', {
-      redirectUrl,
-      callbackUrl,
-      currentOrigin: window.location.origin,
-      envUrl: process.env.NEXT_PUBLIC_APP_URL,
-      redirectTo
-    })
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: callbackUrl,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
-      },
-    })
-
-    if (error) {
-      console.error('❌ [Google OAuth] Error:', error)
-      const errorMessage = error.message || 'An error occurred with Google sign-in'
-      if (onError) onError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-
-    if (data.url) {
-      console.log('✅ [Google OAuth] Redirecting to Google...', {
-        urlPrefix: data.url.substring(0, 100) + '...',
-        fullUrl: data.url
-      })
-
-      if (onSuccess) onSuccess()
-      window.location.href = data.url
-      return { success: true, redirectUrl: data.url }
-    } else {
-      const errorMessage = 'Failed to initiate Google sign-in. Please try again.'
-      if (onError) onError(errorMessage)
-      return { success: false, error: errorMessage }
-    }
-  } catch (error: any) {
-    const errorMessage = error.message || 'An unexpected error occurred with Google sign-in'
-    if (onError) onError(errorMessage)
-    return { success: false, error: errorMessage }
-  }
-}
-*/
-// ------------------------------------------------------------------------
-
-
-
-// ---------- NEW FIXED VERSION ----------
-export interface GoogleOAuthResult {
-  success: boolean
-  error?: string
-  redirectUrl?: string
-}
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 /**
- * Corrected Google OAuth flow.
- *
- * FIXES:
- *  - Uses window.location.origin (localhost or vercel or shooshka automatically)
- *  - Ensures Supabase session is applied on the SAME domain the user logged in from
- *  - No more redirect issues
+ * OAuth Callback Route Handler
+ * Handles the redirect from Google OAuth and exchanges the code for a session
  */
-export async function signInWithGoogle(
-  options: GoogleOAuthOptions = {}
-): Promise<GoogleOAuthResult> {
-  const { onSuccess, onError, redirectTo = '/' } = options
+export async function GET(request: NextRequest) {
+  const requestUrl = new URL(request.url)
+  const code = requestUrl.searchParams.get('code')
+  const error = requestUrl.searchParams.get('error')
+  const errorDescription = requestUrl.searchParams.get('error_description')
+  const next = requestUrl.searchParams.get('next') || '/'
 
-  try {
-    const supabase = createSupabaseClient()
-
-    // FIX: detect current domain automatically
-    const origin =
-      typeof window !== 'undefined'
-        ? window.location.origin
-        : process.env.NEXT_PUBLIC_APP_URL
-
-    const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(
-      redirectTo
-    )}` 
-    // const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
-
-
-    console.log('🔗 [Google OAuth - FIXED] Starting OAuth flow...', {
-      origin,
-      callbackUrl,
-      envUrl: process.env.NEXT_PUBLIC_APP_URL,
-      redirectTo,
-    })
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: callbackUrl,
-      },
-    })
-
-    if (error) {
-      const err = error.message || 'An error occurred with Google sign-in'
-      if (onError) onError(err)
-      return { success: false, error: err }
+  // Logging helper for development only
+  const logError = (message: string, data?: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`[OAuth Callback] ${message}`, data || '')
     }
+  }
 
-    if (data?.url) {
-      if (onSuccess) onSuccess()
-      window.location.href = data.url
-      return { success: true, redirectUrl: data.url }
+  const log = (message: string, data?: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[OAuth Callback] ${message}`, data || '')
     }
-
-    const fallbackErr = 'Google sign-in did not return a redirect URL.'
-    if (onError) onError(fallbackErr)
-    return { success: false, error: fallbackErr }
-  } catch (err: any) {
-    const msg = err.message || 'Unexpected Google sign-in error'
-    if (onError) onError(msg)
-    return { success: false, error: msg }
   }
-}
-// ------------------------------------------------------------------------
 
-
-/**
- * Check if Google OAuth is available/configured
- */
-export function isGoogleOAuthAvailable(): boolean {
-  if (typeof window === 'undefined') return false
-  try {
-    const supabase = createSupabaseClient()
-    return !!supabase
-  } catch {
-    return false
+  // Handle OAuth errors from provider
+  if (error) {
+    logError('OAuth error from provider:', { error, errorDescription })
+    const errorMessage = errorDescription || error
+    return NextResponse.redirect(
+      new URL(`/auth?error=${encodeURIComponent(errorMessage)}`, requestUrl.origin)
+    )
   }
+
+  // Exchange code for session
+  if (code) {
+    try {
+      const cookieStore = cookies()
+      const supabase = createServerComponentClient({ cookies: () => cookieStore })
+
+      log('Exchanging code for session...', { code: code.substring(0, 20) + '...' })
+
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+      if (exchangeError) {
+        logError('Error exchanging code for session:', exchangeError)
+        return NextResponse.redirect(
+          new URL(
+            `/auth?error=${encodeURIComponent(exchangeError.message)}`,
+            requestUrl.origin
+          )
+        )
+      }
+
+      // Successfully authenticated
+      if (data.session) {
+        log('OAuth success - Session created for user:', {
+          email: data.session.user.email,
+          userId: data.session.user.id,
+        })
+
+        // The session cookies are automatically set by exchangeCodeForSession
+        // Redirect to the requested page (or homepage)
+        const redirectUrl = new URL(next === '/' ? '/' : next, requestUrl.origin)
+        
+        // Add success flag to help client-side detect successful auth
+        redirectUrl.searchParams.set('auth', 'success')
+
+        return NextResponse.redirect(redirectUrl)
+      } else {
+        logError('No session returned from exchangeCodeForSession')
+        return NextResponse.redirect(
+          new URL('/auth?error=No session created', requestUrl.origin)
+        )
+      }
+    } catch (err: any) {
+      logError('Unexpected error in callback:', err)
+      return NextResponse.redirect(
+        new URL(
+          `/auth?error=${encodeURIComponent(err.message || 'authentication_failed')}`,
+          requestUrl.origin
+        )
+      )
+    }
+  }
+
+  // If no code, redirect to auth page
+  logError('No authorization code in callback URL')
+  return NextResponse.redirect(
+    new URL('/auth?error=No authorization code', requestUrl.origin)
+  )
 }

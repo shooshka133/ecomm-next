@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { signInWithGoogle, GoogleOAuthOptions } from '@/lib/auth/googleOAuth'
+import { signInWithGoogle, GoogleOAuthOptions } from '@/lib/auth/google'
 
 export interface UseGoogleAuthReturn {
   signIn: (options?: GoogleOAuthOptions) => Promise<void>

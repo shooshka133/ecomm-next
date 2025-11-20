@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
+import { signInWithGoogle } from '@/lib/auth/google'
 import { Mail, Lock, ArrowRight, KeyRound } from 'lucide-react'
 
 export default function AuthPage() {
@@ -194,30 +195,26 @@ export default function AuthPage() {
     setMessageType('error')
     
     try {
-      // Get the correct redirect URL - use production URL if available, otherwise use current origin
-      const redirectUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${redirectUrl}/auth/callback?next=/`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+      const result = await signInWithGoogle({
+        redirectTo: '/',
+        onError: (error) => {
+          setMessageType('error')
+          setMessage(error)
+          setGoogleLoading(false)
+        },
+        onSuccess: () => {
+          // Loading state will be maintained until redirect happens
+          // The redirect happens automatically in signInWithGoogle
         },
       })
-      
-      if (error) {
-        setMessage(error.message || 'An error occurred with Google sign-in')
-        setGoogleLoading(false)
-        return
-      }
 
-      // OAuth redirect will happen automatically via data.url
-      // The browser will navigate to Google, then back to our callback
-      if (data.url) {
-        window.location.href = data.url
+      if (!result.success) {
+        setMessageType('error')
+        setMessage(result.error || 'An error occurred with Google sign-in')
+        setGoogleLoading(false)
       }
+      // If successful, the redirect happens automatically in signInWithGoogle
+      // so we don't need to do anything else here
     } catch (error: any) {
       setMessageType('error')
       setMessage(error.message || 'An error occurred with Google sign-in')
