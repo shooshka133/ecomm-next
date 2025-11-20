@@ -84,10 +84,12 @@ If you're using Google OAuth:
 1. Go to **Google Cloud Console**
 2. **APIs & Services** → **Credentials**
 3. Edit your OAuth 2.0 Client
-4. Add to **Authorized redirect URIs:**
+4. **Authorized redirect URIs** should ONLY have:
    ```
-   https://shooshka.online/api/auth/callback
+   https://eqqcidlflclgegsalbub.supabase.co/auth/v1/callback
    ```
+   
+   ⚠️ **IMPORTANT**: Do NOT add your domain's callback URL here. Supabase handles the redirect internally.
 
 ---
 

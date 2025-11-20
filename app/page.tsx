@@ -24,12 +24,21 @@ export default function Home() {
   // CRITICAL: Handle OAuth code that wrongly lands on homepage
   // This happens when Supabase redirect URL is misconfigured
   useEffect(() => {
+    console.log('🏠 [Homepage] Checking for OAuth code...', {
+      hasCode: !!searchParams.get('code'),
+      code: searchParams.get('code')?.substring(0, 20),
+      allParams: Array.from(searchParams.entries()),
+      currentUrl: window.location.href
+    });
+    
     const code = searchParams.get('code');
     if (code) {
       // OAuth code detected on homepage - redirect to proper callback route
-      console.log('🔄 OAuth code detected on homepage, redirecting to /auth/callback...');
+      console.log('🔄 [Homepage] OAuth code detected! Redirecting to /auth/callback...');
       const nextParam = searchParams.get('next') || '/';
-      window.location.href = `/auth/callback?code=${code}&next=${encodeURIComponent(nextParam)}`;
+      const redirectUrl = `/auth/callback?code=${code}&next=${encodeURIComponent(nextParam)}`;
+      console.log('🔄 [Homepage] Redirect URL:', redirectUrl);
+      window.location.href = redirectUrl;
       return; // Stop further execution
     }
 

@@ -9,66 +9,108 @@ export async function GET(request: NextRequest) {
   const errorDescription = url.searchParams.get('error_description')
   const next = url.searchParams.get('next') || '/'
 
+  // ALWAYS log in production to debug issues
   const logError = (msg: string, data?: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[OAuth Callback]', msg, data || '')
-    }
+    console.error('[OAuth Callback ERROR]', msg, data || '')
   }
   const log = (msg: string, data?: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[OAuth Callback]', msg, data || '')
-    }
+    console.log('[OAuth Callback]', msg, data || '')
   }
+
+  // Log all incoming parameters
+  log('Callback invoked with params:', {
+    hasCode: !!code,
+    hasError: !!error,
+    code: code?.substring(0, 20) + '...',
+    error,
+    errorDescription,
+    next,
+    fullUrl: url.href
+  })
 
   // Handle OAuth errors from provider
   if (error) {
-    logError('OAuth provider error', { error, errorDescription })
+    logError('OAuth provider error detected', { error, errorDescription })
     return NextResponse.redirect(new URL(`/auth?error=${encodeURIComponent(errorDescription || error)}`, url.origin))
   }
 
-  // Handle OAuth code (works for both OAuth providers and email confirmation)
-  if (code) {
-    try {
-      const supabase = createServerComponentClient({ cookies: () => cookies() })
-      log('Exchanging code for session...', { code: code.substring(0, 20) + '...', nextUrl: next })
-      
-      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-
-      if (exchangeError) {
-        logError('Error exchanging code for session', exchangeError)
-        return NextResponse.redirect(new URL(`/auth?error=${encodeURIComponent(exchangeError.message)}`, url.origin))
-      }
-
-      if (!data.session) {
-        logError('No session returned from Supabase')
-        return NextResponse.redirect(new URL('/auth?error=No session created', url.origin))
-      }
-
-      log('Authentication success - Redirecting to:', { 
-        email: data.session.user.email, 
-        id: data.session.user.id,
-        redirectTo: next 
-      })
-      
-      // Clean redirect - don't add auth=success parameter
-      const redirectUrl = new URL(next, url.origin)
-      
-      // Create response with redirect
-      const response = NextResponse.redirect(redirectUrl)
-      
-      // Ensure cookies are set properly
-      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
-      
-      return response
-    } catch (err: any) {
-      logError('Unexpected error', err)
-      return NextResponse.redirect(new URL(`/auth?error=${encodeURIComponent(err.message || 'authentication_failed')}`, url.origin))
-    }
+  // No code provided - this shouldn't happen
+  if (!code) {
+    logError('CRITICAL: No authorization code in callback URL!', {
+      allParams: Object.fromEntries(url.searchParams.entries()),
+      url: url.href
+    })
+    return NextResponse.redirect(new URL('/auth?error=No authorization code', url.origin))
   }
 
-  // No code provided
-  logError('No authorization code in callback URL')
-  return NextResponse.redirect(new URL('/auth?error=No authorization code', url.origin))
+  // Handle OAuth code (works for both OAuth providers and email confirmation)
+  try {
+    log('Creating Supabase client...')
+    const cookieStore = cookies()
+    const supabase = createServerComponentClient({ cookies: () => cookieStore })
+    
+    log('Exchanging code for session...', { 
+      codePrefix: code.substring(0, 20) + '...',
+      nextUrl: next 
+    })
+    
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+
+    if (exchangeError) {
+      logError('FAILED: Error exchanging code for session', {
+        error: exchangeError,
+        message: exchangeError.message,
+        status: exchangeError.status,
+        code: exchangeError.code
+      })
+      return NextResponse.redirect(
+        new URL(`/auth?error=${encodeURIComponent(exchangeError.message || 'Authentication failed')}`, url.origin)
+      )
+    }
+
+    if (!data?.session) {
+      logError('FAILED: No session returned from Supabase', { 
+        hasData: !!data,
+        hasSession: !!data?.session,
+        data 
+      })
+      return NextResponse.redirect(new URL('/auth?error=No session created', url.origin))
+    }
+
+    log('✅ SUCCESS! Authentication complete', { 
+      email: data.session.user.email, 
+      userId: data.session.user.id,
+      hasAccessToken: !!data.session.access_token,
+      redirectTo: next 
+    })
+    
+    // Create redirect URL
+    const redirectUrl = new URL(next, url.origin)
+    
+    log('Creating redirect response to:', redirectUrl.href)
+    
+    // Create response with redirect
+    const response = NextResponse.redirect(redirectUrl)
+    
+    // Ensure cookies are set properly and prevent caching
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate, private')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    log('Redirect response created successfully')
+    
+    return response
+  } catch (err: any) {
+    logError('EXCEPTION: Unexpected error in callback', {
+      error: err,
+      message: err?.message,
+      stack: err?.stack,
+      name: err?.name
+    })
+    return NextResponse.redirect(
+      new URL(`/auth?error=${encodeURIComponent(err.message || 'authentication_failed')}`, url.origin)
+    )
+  }
 }
 
 
