@@ -48,7 +48,8 @@ export async function signInWithGoogle(
       redirectTo,
       windowOrigin: window.location.origin,
       envUrl: process.env.NEXT_PUBLIC_APP_URL,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      test: 'vercel-url'
     })
 
     const { data, error } = await supabase.auth.signInWithOAuth({
