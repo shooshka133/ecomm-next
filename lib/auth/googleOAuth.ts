@@ -27,7 +27,7 @@ export async function signInWithGoogle(
     const supabase = createSupabaseClient()
     
     const redirectUrl = window.location.origin
-    const callbackUrl = `${redirectUrl}/api/auth/callback?next=${encodeURIComponent(redirectTo)}`
+    const callbackUrl = `${redirectUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`
 
     console.log('🔗 [Google OAuth] Starting OAuth flow...', {
       redirectUrl,
