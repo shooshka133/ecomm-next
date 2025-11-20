@@ -71,7 +71,8 @@ export interface UserAddress {
 export interface WishlistItem {
   id: string
   user_id: string
-  product_id: string
+  item_id: string
+  item_name: string
   created_at?: string
   products?: Product
 }

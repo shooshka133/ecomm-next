@@ -128,6 +128,12 @@ export default function Navbar() {
               <div className="text-gray-500 whitespace-nowrap ml-3">Loading...</div>
             ) : user ? (
               <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0 ml-3">
+                {/* Wishlist Button */}
+                <Link href="/wishlist" className="text-gray-700 hover:text-indigo-600 font-medium">
+  Wishlist
+</Link>
+
+
                 <Link 
                   href="/cart" 
                   className="relative flex items-center gap-1 text-gray-700 hover:text-indigo-600 font-medium transition-colors group whitespace-nowrap"
