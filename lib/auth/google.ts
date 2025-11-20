@@ -27,9 +27,10 @@ export async function signInWithGoogle(
     const supabase = createSupabaseClient()
 
     // Get the correct redirect URL - use production URL if available, otherwise use current origin
+    // Force production URL if on Vercel deployment
     const origin =
       typeof window !== 'undefined'
-        ? window.location.origin
+        ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin)
         : process.env.NEXT_PUBLIC_APP_URL || ''
 
     if (!origin) {
@@ -40,13 +41,14 @@ export async function signInWithGoogle(
 
     const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔗 [Google OAuth] Starting OAuth flow...', {
-        origin,
-        callbackUrl,
-        redirectTo,
-      })
-    }
+    // ALWAYS log in production for debugging
+    console.log('🔗 [Google OAuth] Starting OAuth flow...', {
+      origin,
+      callbackUrl,
+      redirectTo,
+      windowOrigin: window.location.origin,
+      envUrl: process.env.NEXT_PUBLIC_APP_URL,
+    })
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -58,6 +60,11 @@ export async function signInWithGoogle(
         },
       },
     })
+
+    // Log what Supabase returns
+    if (data?.url) {
+      console.log('✅ [Google OAuth] Supabase returned URL:', data.url)
+    }
 
     if (error) {
       const errorMessage = error.message || 'An error occurred with Google sign-in'

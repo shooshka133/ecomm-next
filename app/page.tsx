@@ -21,8 +21,18 @@ export default function Home() {
   const productsPerPage = 24; // Increased from 12 to show more products
   const supabase = createSupabaseClient();
 
-  // Handle OAuth callback success - refresh session and remove query param
+  // CRITICAL: Handle OAuth code that wrongly lands on homepage
+  // This happens when Supabase redirect URL is misconfigured
   useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      // OAuth code detected on homepage - redirect to proper callback route
+      console.log('🔄 OAuth code detected on homepage, redirecting to /auth/callback...');
+      const nextParam = searchParams.get('next') || '/';
+      window.location.href = `/auth/callback?code=${code}&next=${encodeURIComponent(nextParam)}`;
+      return; // Stop further execution
+    }
+
     const authSuccess = searchParams.get('auth');
     if (authSuccess === 'success') {
       // Force refresh the session after OAuth callback
