@@ -1,0 +1,20 @@
+[33m987edd1[m[33m ([m[1;36mHEAD[m[33m)[m Fix Google OAuth sign-up redirect and session handling
+[33ma60b3b3[m Fix Wishlist link visibility in Navbar - add explicit styles and key prop
+[33m02cdae4[m Add wishlist page, fix Google OAuth redirect, improve password reset, and fix wishlist persistence
+[33mfadfe54[m Add required error.tsx and not-found.tsx components for Next.js App Router
+[33mbdd9cc6[m Enhance auth page: add retype password, field validation, email existence check, reorder email/Google, and improve password recovery
+[33m67b6a30[m Remove empty auth callback route file - using api/auth/callback instead
+[33m51af487[m Fix ESLint errors: escape apostrophes and quotes in JSX
+[33m40d348f[m Fix ESLint errors: escape apostrophe and quotes for production build
+[33m1a9fc67[m Add comprehensive domain mapping guide for connecting shooshka.online to Vercel
+[33m224827a[m Update environment variables template with shooshka.online and clarify webhook URL configuration
+[33ma5fc5d0[m Update deployment guide with custom domain shooshka.online and correct webhook endpoint
+[33mf5cd30f[m Add comprehensive Vercel deployment guide for free tier
+[33mdc68097[m Optimize product display: compact cards, read more functionality, and improved UX
+[33m87e466f[m Add 60 dummy products with valid images, wishlist functionality, and production-ready error handling
+[33m0782331[m local changes
+[33m24a666f[m Update SETUP.md
+[33mcfc2ffd[m Update README to hide Supabase keys
+[33m35df1ab[m Initial commit
+[33m24ad2df[m adding addrs in profile and search
+[33me6ce012[m Initial commit: E-commerce platform with Supabase auth and Stripe payments
