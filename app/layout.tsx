@@ -1,5 +1,5 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Inter, Poppins } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/AuthProvider'
 import Navbar from '@/components/Navbar'
@@ -7,6 +7,11 @@ import ToastWrapper from '@/components/ToastWrapper'
 import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
+const poppins = Poppins({ 
+  weight: ['400', '500', '600', '700', '800'],
+  subsets: ['latin'],
+  variable: '--font-poppins',
+})
 
 export const metadata: Metadata = {
   title: 'Ecommerce Start - Modern Shopping Experience',
@@ -16,12 +21,13 @@ export const metadata: Metadata = {
     shortcut: '/icon.svg',
     apple: '/apple-icon.svg',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
   themeColor: '#4F46E5',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-  },
 }
 
 export default function RootLayout({
@@ -30,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={poppins.variable}>
       <head>
         {/* Suppress extension-related errors */}
         <script
@@ -52,7 +58,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${poppins.variable}`}>
         <AuthProvider>
           <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50/30">
             <Navbar />

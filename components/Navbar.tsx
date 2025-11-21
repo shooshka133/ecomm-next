@@ -98,16 +98,21 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-gray-200">
+    <nav className="bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4 gap-4">
+        <div className="flex justify-between items-center py-3 gap-4">
           <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-              <span className="text-white font-bold text-xl">E</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-md">
+              <span className="text-white font-bold text-lg font-poppins">E</span>
             </div>
-            <span className="text-2xl font-bold gradient-text hidden sm:block">
-              Ecommerce Start
-            </span>
+            <div className="hidden sm:block">
+              <span className="text-xl font-poppins font-bold gradient-text tracking-tight">
+                Ecommerce
+              </span>
+              <span className="text-xl font-poppins font-light text-gray-600 ml-1">
+                Start
+              </span>
+            </div>
           </Link>
           
           {/* Desktop Menu */}
@@ -116,60 +121,59 @@ export default function Navbar() {
             <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
               <Link 
                 href="/" 
-                className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group whitespace-nowrap"
+                className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-600 hover:to-purple-600 hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
               >
                 Products
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
               </Link>
             </div>
             
             {/* User-specific items */}
             {loading ? (
-              <div className="text-gray-500 whitespace-nowrap ml-3">Loading...</div>
+              <div className="text-gray-500 whitespace-nowrap ml-3 font-poppins text-sm">Loading...</div>
             ) : user ? (
-              <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0 ml-3">
+              <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
                 {/* Wishlist Button */}
-                <Link href="/wishlist" className="text-gray-700 hover:text-indigo-600 font-medium">
-  Wishlist
-</Link>
-
+                <Link 
+                  href="/wishlist" 
+                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-pink-100 to-rose-100 hover:from-pink-500 hover:to-rose-500 hover:shadow-lg hover:scale-105 hover:rotate-1 transform shadow-sm"
+                >
+                  Wishlist
+                </Link>
 
                 <Link 
                   href="/cart" 
-                  className="relative flex items-center gap-1 text-gray-700 hover:text-indigo-600 font-medium transition-colors group whitespace-nowrap"
+                  className="relative flex items-center gap-2 text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-600 hover:to-purple-600 hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
                 >
-                  <ShoppingCart className="w-5 h-5" />
+                  <ShoppingCart className="w-4 h-4" />
                   <span>Cart</span>
                   {cartCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg animate-pulse-glow">
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-poppins font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md ring-2 ring-white">
                       {cartCount > 9 ? '9+' : cartCount}
                     </span>
                   )}
                 </Link>
                 <Link 
                   href="/orders" 
-                  className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group whitespace-nowrap"
+                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-600 hover:to-purple-600 hover:shadow-lg hover:scale-105 hover:rotate-1 transform shadow-sm"
                 >
                   Orders
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
                 </Link>
                 <Link 
                   href="/profile" 
-                  className="text-gray-700 hover:text-indigo-600 font-medium transition-colors relative group whitespace-nowrap"
+                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-600 hover:to-pink-600 hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
                 >
                   Profile
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-indigo-600 group-hover:w-full transition-all duration-300"></span>
                 </Link>
-                <div className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-3 border-l border-gray-200 flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
-                      <User className="w-5 h-5 text-white" />
+                <div className="flex items-center gap-3 pl-4 border-l border-gray-200 flex-shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ring-2 ring-white">
+                      <User className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-gray-700 font-medium hidden xl:block whitespace-nowrap text-sm">{user.email?.split('@')[0]}</span>
+                    <span className="text-gray-700 font-poppins font-semibold hidden xl:block whitespace-nowrap text-sm">{user.email?.split('@')[0]}</span>
                   </div>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-1 lg:gap-2 bg-red-500 text-white px-2 lg:px-3 py-2 rounded-lg hover:bg-red-600 transition-all font-medium shadow-md hover:shadow-lg flex-shrink-0 whitespace-nowrap text-sm"
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-red-500 to-rose-500 text-white px-3 py-1.5 rounded-lg hover:from-red-600 hover:to-rose-600 transition-all font-poppins font-medium shadow-sm hover:shadow-md flex-shrink-0 whitespace-nowrap text-sm"
                   >
                     <LogOut className="w-4 h-4" />
                     <span className="hidden lg:inline">Sign Out</span>
@@ -179,7 +183,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/auth"
-                className="btn-primary ml-3 flex-shrink-0"
+                className="bg-gradient-to-r from-indigo-200 to-purple-200 text-gray-700 px-6 py-2 rounded-lg font-poppins font-bold text-sm hover:from-indigo-600 hover:to-purple-600 hover:text-white transition-all shadow-sm hover:shadow-lg transform hover:scale-105 hover:-rotate-1 flex-shrink-0"
               >
                 Sign In
               </Link>
@@ -197,11 +201,11 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 animate-slide-in">
-            <div className="flex flex-col gap-4">
+          <div className="md:hidden py-4 border-t border-gray-100 animate-slide-in bg-gradient-to-b from-white to-gray-50/50">
+            <div className="flex flex-col gap-3">
               <Link 
                 href="/" 
-                className="text-gray-700 hover:text-indigo-600 font-medium"
+                className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 active:from-indigo-600 active:to-purple-600 active:scale-95 transition-all transform shadow-sm"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Products
@@ -209,40 +213,56 @@ export default function Navbar() {
               {user && (
                 <>
                   <Link 
-                    href="/cart" 
-                    className="flex items-center gap-2 text-gray-700 hover:text-indigo-600 font-medium"
+                    href="/wishlist" 
+                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-pink-100 to-rose-100 active:from-pink-500 active:to-rose-500 active:scale-95 transition-all transform shadow-sm"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <ShoppingCart className="w-5 h-5" />
-                    Cart {cartCount > 0 && `(${cartCount})`}
+                    Wishlist
+                  </Link>
+                  <Link 
+                    href="/cart" 
+                    className="flex items-center justify-between text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 active:from-indigo-600 active:to-purple-600 active:scale-95 transition-all transform shadow-sm"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShoppingCart className="w-5 h-5" />
+                      Cart
+                    </span>
+                    {cartCount > 0 && (
+                      <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-poppins font-bold rounded-full px-2 py-1 shadow-sm">
+                        {cartCount}
+                      </span>
+                    )}
                   </Link>
                   <Link 
                     href="/orders" 
-                    className="text-gray-700 hover:text-indigo-600 font-medium"
+                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 active:from-indigo-600 active:to-purple-600 active:scale-95 transition-all transform shadow-sm"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Orders
                   </Link>
                   <Link 
                     href="/profile" 
-                    className="text-gray-700 hover:text-indigo-600 font-medium"
+                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 active:from-purple-600 active:to-pink-600 active:scale-95 transition-all transform shadow-sm"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Profile
                   </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex items-center gap-2 text-red-600 font-medium text-left"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    Sign Out
-                  </button>
+                  <div className="pt-3 mt-3 border-t border-gray-200">
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 text-white font-poppins font-semibold text-sm py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-rose-600 transition-all shadow-md"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
                 </>
               )}
               {!user && (
                 <Link
                   href="/auth"
-                  className="btn-primary text-center"
+                  className="bg-gradient-to-r from-indigo-200 to-purple-200 text-gray-700 font-poppins font-bold text-sm py-3 px-4 rounded-lg active:from-indigo-600 active:to-purple-600 active:text-white active:scale-95 transition-all transform shadow-sm text-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sign In
