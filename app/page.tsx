@@ -6,6 +6,8 @@ import ProductGrid from "@/components/ProductGrid";
 import SearchBar from "@/components/SearchBar";
 import CategoryFilter from "@/components/CategoryFilter";
 import Pagination from "@/components/Pagination";
+import AutoScrollProducts from "@/components/AutoScrollProducts";
+import HeroWindowDisplay from "@/components/HeroWindowDisplay";
 import { Sparkles, Truck, Shield, Star, TrendingUp } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Product } from "@/types";
@@ -197,92 +199,57 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right: STUNNING Product Images Grid */}
+            {/* Right: WINDOW DISPLAY SHOWCASE - Like a Store Window */}
             <div className="relative py-8 lg:py-16 hidden lg:block">
-              {/* Animated glow effects */}
-              <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-pink-400/30 rounded-full filter blur-3xl animate-pulse"></div>
-              <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-indigo-400/30 rounded-full filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-
-              <div className="relative z-10 grid grid-cols-2 gap-4">
-                {/* Large Featured Product */}
-                {products[0] && (
-                  <Link href={`/products/${products[0].id}`} className="col-span-2 group relative rounded-3xl overflow-hidden shadow-2xl hover:shadow-pink-500/50 transition-all duration-500 animate-fade-in cursor-pointer">
-                    <div className="aspect-[16/10] bg-white/10 backdrop-blur-sm">
-                      {products[0].image_url ? (
-                        <img
-                          src={products[0].image_url}
-                          alt={products[0].name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                      <div className="inline-block bg-pink-500 text-white text-xs px-3 py-1 rounded-full mb-2">
-                        Trending
-                      </div>
-                      <h3 className="text-xl font-bold mb-1">{products[0].name}</h3>
-                      <p className="text-lg font-semibold text-pink-200">${products[0].price}</p>
-                    </div>
-                  </Link>
-                )}
-
-                {/* Two smaller products */}
-                {products.slice(1, 3).map((product, index) => (
-                  <Link
-                    key={product.id}
-                    href={`/products/${product.id}`}
-                    className="group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-indigo-500/50 transition-all duration-500 animate-fade-in cursor-pointer"
-                    style={{ animationDelay: `${(index + 1) * 0.2}s` }}
-                  >
-                    <div className="aspect-square bg-white/10 backdrop-blur-sm">
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                      ) : null}
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                      <h3 className="text-sm font-bold mb-1 truncate">{product.name}</h3>
-                      <p className="text-base font-semibold text-indigo-200">${product.price}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <HeroWindowDisplay products={products} />
             </div>
           </div>
         </div>
 
-        {/* Mobile Product Preview */}
+        {/* Mobile Window Display */}
         <div className="lg:hidden pb-8">
           <div className="container mx-auto px-4">
-            <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-              {products.slice(0, 5).map((product, index) => (
+            <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+              {products.slice(0, 4).map((product, index) => (
                 <Link
                   key={product.id}
                   href={`/products/${product.id}`}
-                  className="flex-shrink-0 w-32 group relative rounded-xl overflow-hidden shadow-lg cursor-pointer"
+                  className="group relative rounded-xl overflow-hidden shadow-lg cursor-pointer bg-white/10 backdrop-blur-md border border-white/20 hover:scale-105 transition-all duration-300"
                   style={{
                     animation: 'fadeInScale 0.6s ease-out forwards',
                     animationDelay: `${index * 0.1}s`,
                     opacity: 0
                   }}
                 >
-                  <div className="aspect-square bg-white/10">
+                  <div className="aspect-square relative overflow-hidden">
                     {product.image_url ? (
                       <img
                         src={product.image_url}
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                    ) : null}
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/20 to-white/5 text-white text-xs p-2 text-center">
+                        {product.name}
+                      </div>
+                    )}
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 right-0 p-2 text-white">
-                    <p className="text-xs font-semibold text-pink-200">${product.price}</p>
+                  
+                  {/* Trending Badge */}
+                  {index < 2 && (
+                    <div className="absolute top-2 left-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs px-2 py-0.5 rounded-full shadow-lg">
+                      🔥
+                    </div>
+                  )}
+
+                  {/* Price Badge */}
+                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-gray-900 px-2 py-0.5 rounded-full shadow-lg font-bold text-xs">
+                    ${product.price.toFixed(2)}
+                  </div>
+
+                  {/* Product Name on Bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                    <p className="text-white text-xs font-bold line-clamp-1">{product.name}</p>
                   </div>
                 </Link>
               ))}
@@ -388,6 +355,9 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      {/* Auto-Scrolling Product Showcase */}
+      <AutoScrollProducts products={products.slice(0, 20)} />
 
       {/* Promotional Banner - Image Grid */}
       {products.length >= 6 && (

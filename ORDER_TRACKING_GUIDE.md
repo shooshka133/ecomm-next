@@ -31,7 +31,7 @@ This will:
 
 ## 👨‍💼 Admin: How to Update Order Status
 
-### Method 1: Supabase Dashboard (Easiest)
+### Method 1: Supabase Dashboard (Easiest) 🎯
 
 #### View Orders:
 1. Go to **Supabase Dashboard** → **Table Editor**
@@ -41,9 +41,16 @@ This will:
 #### Update Order to "Shipped":
 1. Find the order you want to update
 2. Click on the **"status"** cell
-3. Select **"shipped"** from dropdown
-4. (Optional) Add **tracking_number** in the tracking_number cell
-5. Changes save automatically!
+3. **Select "shipped" from dropdown** ⬇️ (No typing needed!)
+4. **Tracking number AUTO-GENERATES!** 🎉 (Format: TRK-20240115-10523)
+5. (Optional) Replace with carrier tracking (USPS, FedEx, etc.)
+6. Changes save automatically!
+
+**✨ NEW Features:**
+- ✅ Status is now a dropdown - no typing!
+- ✅ Tracking numbers auto-generate when shipped!
+- ✅ Can use auto-generated OR replace with carrier tracking
+- ✅ Perfect for future shipping API integrations
 
 The system will **automatically**:
 - ✅ Set `shipped_at` timestamp to now

@@ -22,9 +22,15 @@ Filter: `status = processing`
 ### Ship an Order:
 1. Find the order in **orders** table
 2. Click the **status** cell
-3. Select **"shipped"**
-4. (Optional) Add tracking number in **tracking_number** cell
-5. Done! Customer sees it instantly ✅
+3. **Select "shipped" from dropdown** ⬇️
+4. **Tracking auto-generates!** (TRK-20240115-10523) 🎉
+5. (Optional) Replace with carrier tracking (USPS, FedEx, etc.)
+6. Done! Customer sees it instantly ✅
+
+**✨ New Features:**
+- Status dropdown - no typing!
+- Tracking numbers auto-generate!
+- Can use auto or replace with carrier tracking!
 
 ---
 
