@@ -116,7 +116,7 @@ export default function Navbar() {
           </Link>
           
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-3 lg:gap-4 min-w-0 flex-1 justify-end">
+          <div className="hidden lg:flex items-center gap-4 xl:gap-6 min-w-0 flex-1 justify-end">
             {/* Core Navigation - Always visible */}
             <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
               <Link 
@@ -190,18 +190,18 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile/Tablet Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-700 hover:text-indigo-600"
+            className="lg:hidden p-2 text-gray-700 hover:text-indigo-600"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile/Tablet Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100 animate-slide-in bg-gradient-to-b from-white to-gray-50/50">
+          <div className="lg:hidden py-4 border-t border-gray-100 animate-slide-in bg-gradient-to-b from-white to-gray-50/50">
             <div className="flex flex-col gap-3">
               <Link 
                 href="/" 
