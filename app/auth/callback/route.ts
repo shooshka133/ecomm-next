@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   try {
     log('Creating Supabase client...')
     const cookieStore = cookies()
-    const supabase = createServerComponentClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
     log('Exchanging code for session...', { 
       codePrefix: code.substring(0, 20) + '...',
@@ -84,8 +84,17 @@ export async function GET(request: NextRequest) {
       redirectTo: next 
     })
     
-    // Create redirect URL
+    // IMPORTANT: Set the session explicitly to ensure cookies are properly set
+    await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    })
+    
+    log('Session set in Supabase client')
+    
+    // Create redirect URL with a small delay parameter to ensure cookies propagate
     const redirectUrl = new URL(next, url.origin)
+    redirectUrl.searchParams.set('_t', Date.now().toString())
     
     log('Creating redirect response to:', redirectUrl.href)
     
