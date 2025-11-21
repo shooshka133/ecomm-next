@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, X } from 'lucide-react'
 import { Product } from '@/types'
 import { useRouter } from 'next/navigation'
@@ -13,6 +13,21 @@ export default function SearchBar({ products }: SearchBarProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [isFocused, setIsFocused] = useState(false)
   const router = useRouter()
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsFocused(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return []
@@ -32,7 +47,7 @@ export default function SearchBar({ products }: SearchBarProps) {
   }
 
   return (
-    <div className="relative max-w-2xl mx-auto">
+    <div ref={searchRef} className="relative max-w-2xl mx-auto">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
         <input
@@ -40,7 +55,6 @@ export default function SearchBar({ products }: SearchBarProps) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 200)}
           placeholder="Search for products..."
           className="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-lg"
         />
@@ -61,7 +75,7 @@ export default function SearchBar({ products }: SearchBarProps) {
             <button
               key={product.id}
               onClick={() => handleProductClick(product.id)}
-              className="w-full p-4 hover:bg-indigo-50 transition-colors text-left flex items-center gap-4 border-b border-gray-100 last:border-0"
+              className="w-full p-4 hover:bg-indigo-50 transition-colors text-left flex items-center gap-4 border-b border-gray-100 last:border-0 cursor-pointer"
             >
               {product.image_url ? (
                 <img
