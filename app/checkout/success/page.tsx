@@ -165,6 +165,18 @@ export default function CheckoutSuccessPage() {
                 .delete()
                 .eq('user_id', user.id)
               
+              // Remove purchased items from wishlist
+              const purchasedProductIds = fullCartItems.map((item: any) => item.product_id)
+              if (purchasedProductIds.length > 0) {
+                await supabase
+                  .from('wishlist')
+                  .delete()
+                  .eq('user_id', user.id)
+                  .in('product_id', purchasedProductIds)
+                
+                console.log('Removed purchased items from wishlist:', purchasedProductIds.length)
+              }
+              
               console.log('Order created manually:', order.id)
               
               // Dispatch event to update cart count

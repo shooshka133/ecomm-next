@@ -161,6 +161,23 @@ export async function POST(request: NextRequest) {
       logError('Webhook: Error clearing cart', deleteError)
     }
 
+    // Remove purchased items from wishlist
+    const purchasedProductIds = cartItems.map((item: any) => item.product_id)
+    if (purchasedProductIds.length > 0) {
+      const { error: wishlistError } = await supabaseAdmin
+        .from('wishlist')
+        .delete()
+        .eq('user_id', userId)
+        .in('product_id', purchasedProductIds)
+      
+      if (wishlistError) {
+        logError('Webhook: Error removing from wishlist', wishlistError)
+        // Don't fail the request if wishlist clearing fails
+      } else {
+        log('Webhook: Removed purchased items from wishlist', { count: purchasedProductIds.length })
+      }
+    }
+
     return NextResponse.json({ 
       received: true, 
       orderId: order.id,
