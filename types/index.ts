@@ -26,8 +26,12 @@ export interface Order {
   id: string
   user_id: string
   total: number
-  status: 'pending' | 'processing' | 'completed' | 'cancelled'
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
   stripe_payment_intent_id?: string
+  tracking_number?: string
+  estimated_delivery_date?: string
+  shipped_at?: string
+  delivered_at?: string
   created_at?: string
   updated_at?: string
   order_items?: OrderItem[]

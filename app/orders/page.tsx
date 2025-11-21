@@ -13,8 +13,10 @@ import {
   MapPin,
   ChevronDown,
   ChevronUp,
+  Truck,
 } from "lucide-react";
 import Link from "next/link";
+import OrderTracking from "@/components/OrderTracking";
 
 export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -74,27 +76,46 @@ export default function OrdersPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed":
+      case "delivered":
         return <CheckCircle className="w-6 h-6 text-green-600" />;
+      case "shipped":
+        return <Truck className="w-6 h-6 text-indigo-600" />;
       case "processing":
-        return <Clock className="w-6 h-6 text-blue-600" />;
+        return <Package className="w-6 h-6 text-blue-600" />;
       case "cancelled":
         return <XCircle className="w-6 h-6 text-red-600" />;
       default:
-        return <Package className="w-6 h-6 text-yellow-600" />;
+        return <Clock className="w-6 h-6 text-yellow-600" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "completed":
+      case "delivered":
         return "bg-green-100 text-green-800 border-green-200";
+      case "shipped":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200";
       case "processing":
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "cancelled":
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "delivered":
+        return "Delivered";
+      case "shipped":
+        return "Shipped";
+      case "processing":
+        return "Processing";
+      case "cancelled":
+        return "Cancelled";
+      default:
+        return "Pending";
     }
   };
 
@@ -189,8 +210,7 @@ export default function OrdersPage() {
                       )}`}
                     >
                       {getStatusIcon(order.status)}
-                      {order.status.charAt(0).toUpperCase() +
-                        order.status.slice(1)}
+                      {getStatusLabel(order.status)}
                     </span>
                     <div className="text-right">
                       <p className="text-sm text-gray-600 mb-1">Total</p>
@@ -211,40 +231,46 @@ export default function OrdersPage() {
 
               {/* Order Details (Expandable) */}
               {expandedOrder === order.id && order.order_items && (
-                <div className="border-t border-gray-200 p-6 bg-gray-50">
-                  <h4 className="font-bold text-gray-900 mb-4">Order Items</h4>
-                  <div className="space-y-4">
-                    {order.order_items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="bg-white rounded-xl p-4 flex items-center gap-4"
-                      >
-                        {item.products?.image_url ? (
-                          <img
-                            src={item.products.image_url}
-                            alt={item.products.name}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <span className="text-gray-400 text-xs">
-                              No Image
-                            </span>
+                <div className="border-t border-gray-200 p-6 bg-gray-50 space-y-6">
+                  {/* Order Tracking */}
+                  <OrderTracking order={order} />
+
+                  {/* Order Items */}
+                  <div>
+                    <h4 className="font-bold text-gray-900 mb-4">Order Items</h4>
+                    <div className="space-y-4">
+                      {order.order_items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="bg-white rounded-xl p-4 flex items-center gap-4"
+                        >
+                          {item.products?.image_url ? (
+                            <img
+                              src={item.products.image_url}
+                              alt={item.products.name}
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                              <span className="text-gray-400 text-xs">
+                                No Image
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <h5 className="font-semibold text-gray-900">
+                              {item.products?.name || "Product"}
+                            </h5>
+                            <p className="text-sm text-gray-600">
+                              Quantity: {item.quantity} × ${item.price.toFixed(2)}
+                            </p>
                           </div>
-                        )}
-                        <div className="flex-1">
-                          <h5 className="font-semibold text-gray-900">
-                            {item.products?.name || "Product"}
-                          </h5>
-                          <p className="text-sm text-gray-600">
-                            Quantity: {item.quantity} × ${item.price.toFixed(2)}
+                          <p className="font-bold text-gray-900">
+                            ${(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
-                        <p className="font-bold text-gray-900">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
