@@ -144,54 +144,54 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Hero Section - ASTONISHING with BOLD Product Images */}
       <section className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[600px] md:min-h-[700px]">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-center min-h-[500px] sm:min-h-[600px] md:min-h-[700px]">
             
             {/* Left: Text Content */}
-            <div className="py-16 md:py-24 relative z-10">
+            <div className="py-12 sm:py-16 md:py-24 relative z-10">
               <div className="animate-fade-in">
-                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6">
-                  <Sparkles className="w-5 h-5" />
-                  <span className="text-sm font-medium">
+                <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="text-xs sm:text-sm font-medium">
                     Premium Quality Products
                   </span>
                 </div>
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent drop-shadow-2xl leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent drop-shadow-2xl leading-tight">
                   Welcome to Ecommerce Start
                 </h1>
-                <p className="text-lg md:text-xl mb-8 text-blue-100 leading-relaxed drop-shadow-lg">
+                <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-blue-100 leading-relaxed drop-shadow-lg">
                   Discover amazing products at unbeatable prices. Shop the latest
                   trends and technology with confidence.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <Link
                     href="#products"
-                    className="btn-primary text-lg px-8 py-4 inline-flex items-center justify-center gap-2 shadow-2xl hover:shadow-indigo-500/50 transition-all"
+                    className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 inline-flex items-center justify-center gap-2 shadow-2xl hover:shadow-indigo-500/50 transition-all"
                   >
                     <span>Shop Now</span>
-                    <TrendingUp className="w-5 h-5" />
+                    <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                   </Link>
                   <Link
                     href="#features"
-                    className="btn-secondary text-lg px-8 py-4 text-center shadow-xl"
+                    className="btn-secondary text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 text-center shadow-xl"
                   >
                     Learn More
                   </Link>
                 </div>
 
                 {/* Stats Bar */}
-                <div className="grid grid-cols-3 gap-4 mt-12 pt-8 border-t border-white/20">
+                <div className="grid grid-cols-3 gap-3 sm:gap-4 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-white/20">
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">500+</div>
-                    <div className="text-sm text-blue-100">Products</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">500+</div>
+                    <div className="text-xs sm:text-sm text-blue-100">Products</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">10K+</div>
-                    <div className="text-sm text-blue-100">Customers</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">10K+</div>
+                    <div className="text-xs sm:text-sm text-blue-100">Customers</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">24/7</div>
-                    <div className="text-sm text-blue-100">Support</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">24/7</div>
+                    <div className="text-xs sm:text-sm text-blue-100">Support</div>
                   </div>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export default function Home() {
               <div className="relative z-10 grid grid-cols-2 gap-4">
                 {/* Large Featured Product */}
                 {products[0] && (
-                  <div className="col-span-2 group relative rounded-3xl overflow-hidden shadow-2xl hover:shadow-pink-500/50 transition-all duration-500 animate-fade-in">
+                  <Link href={`/products/${products[0].id}`} className="col-span-2 group relative rounded-3xl overflow-hidden shadow-2xl hover:shadow-pink-500/50 transition-all duration-500 animate-fade-in cursor-pointer">
                     <div className="aspect-[16/10] bg-white/10 backdrop-blur-sm">
                       {products[0].image_url ? (
                         <img
@@ -224,14 +224,15 @@ export default function Home() {
                       <h3 className="text-xl font-bold mb-1">{products[0].name}</h3>
                       <p className="text-lg font-semibold text-pink-200">${products[0].price}</p>
                     </div>
-                  </div>
+                  </Link>
                 )}
 
                 {/* Two smaller products */}
                 {products.slice(1, 3).map((product, index) => (
-                  <div
+                  <Link
                     key={product.id}
-                    className="group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-indigo-500/50 transition-all duration-500 animate-fade-in"
+                    href={`/products/${product.id}`}
+                    className="group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-indigo-500/50 transition-all duration-500 animate-fade-in cursor-pointer"
                     style={{ animationDelay: `${(index + 1) * 0.2}s` }}
                   >
                     <div className="aspect-square bg-white/10 backdrop-blur-sm">
@@ -248,7 +249,7 @@ export default function Home() {
                       <h3 className="text-sm font-bold mb-1 truncate">{product.name}</h3>
                       <p className="text-base font-semibold text-indigo-200">${product.price}</p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -260,9 +261,10 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
               {products.slice(0, 5).map((product, index) => (
-                <div
+                <Link
                   key={product.id}
-                  className="flex-shrink-0 w-32 group relative rounded-xl overflow-hidden shadow-lg"
+                  href={`/products/${product.id}`}
+                  className="flex-shrink-0 w-32 group relative rounded-xl overflow-hidden shadow-lg cursor-pointer"
                   style={{
                     animation: 'fadeInScale 0.6s ease-out forwards',
                     animationDelay: `${index * 0.1}s`,
@@ -282,7 +284,7 @@ export default function Home() {
                   <div className="absolute bottom-0 left-0 right-0 p-2 text-white">
                     <p className="text-xs font-semibold text-pink-200">${product.price}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -307,21 +309,21 @@ export default function Home() {
 
       {/* Featured Products Showcase - Large Images */}
       {products.length > 0 && (
-        <section className="bg-gradient-to-b from-white to-gray-50 py-16 md:py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-3">
+        <section className="bg-gradient-to-b from-white to-gray-50 py-12 sm:py-16 md:py-20">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold gradient-text mb-2 sm:mb-3">
                 ✨ Trending Now
               </h2>
-              <p className="text-gray-600">Hot products everyone is talking about</p>
+              <p className="text-sm sm:text-base text-gray-600">Hot products everyone is talking about</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {/* Featured Product 1 - Large */}
               {products[0] && (
-                <div className="md:col-span-2 md:row-span-2 group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500">
+                <div className="sm:col-span-2 md:col-span-2 md:row-span-2 group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl hover:shadow-2xl transition-all duration-500">
                   <Link href={`/products/${products[0].id}`} className="block">
-                    <div className="aspect-[16/10] md:aspect-[16/9] overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100">
+                    <div className="aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100">
                       {products[0].image_url ? (
                         <img
                           src={products[0].image_url}
@@ -335,14 +337,14 @@ export default function Home() {
                       )}
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                      <div className="inline-block bg-indigo-600 text-white text-xs px-3 py-1 rounded-full mb-3">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      <div className="inline-block bg-indigo-600 text-white text-xs px-2 sm:px-3 py-1 rounded-full mb-2 sm:mb-3">
                         Featured
                       </div>
-                      <h3 className="text-2xl md:text-3xl font-bold mb-2">
+                      <h3 className="text-lg sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2 line-clamp-2">
                         {products[0].name}
                       </h3>
-                      <p className="text-lg md:text-xl font-semibold text-indigo-200">
+                      <p className="text-base sm:text-lg md:text-xl font-semibold text-indigo-200">
                         ${products[0].price}
                       </p>
                     </div>
@@ -354,10 +356,10 @@ export default function Home() {
               {products.slice(1, 3).map((product, index) => (
                 <div
                   key={product.id}
-                  className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500"
+                  className="group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-500"
                 >
                   <Link href={`/products/${product.id}`} className="block">
-                    <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-pink-100 to-rose-100">
+                    <div className="aspect-square sm:aspect-[4/3] overflow-hidden bg-gradient-to-br from-pink-100 to-rose-100">
                       {product.image_url ? (
                         <img
                           src={product.image_url}
@@ -371,11 +373,11 @@ export default function Home() {
                       )}
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                      <h3 className="text-lg md:text-xl font-bold mb-1">
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      <h3 className="text-sm sm:text-lg md:text-xl font-bold mb-1 line-clamp-2">
                         {product.name}
                       </h3>
-                      <p className="text-base md:text-lg font-semibold text-indigo-200">
+                      <p className="text-sm sm:text-base md:text-lg font-semibold text-indigo-200">
                         ${product.price}
                       </p>
                     </div>
@@ -389,13 +391,13 @@ export default function Home() {
 
       {/* Promotional Banner - Image Grid */}
       {products.length >= 6 && (
-        <section className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {products.slice(3, 6).map((product) => (
               <Link
                 key={product.id}
                 href={`/products/${product.id}`}
-                className="group relative aspect-[4/5] rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500"
+                className="group relative aspect-[4/5] rounded-lg sm:rounded-xl overflow-hidden shadow-md sm:shadow-lg hover:shadow-2xl transition-all duration-500"
               >
                 <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200">
                   {product.image_url ? (
@@ -405,17 +407,17 @@ export default function Home() {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs sm:text-sm p-2">
                       {product.name}
                     </div>
                   )}
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className="font-bold mb-1 text-sm md:text-base">{product.name}</h3>
-                  <p className="font-semibold text-indigo-200">${product.price}</p>
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                  <h3 className="font-bold mb-1 text-xs sm:text-sm md:text-base line-clamp-2">{product.name}</h3>
+                  <p className="font-semibold text-indigo-200 text-sm sm:text-base">${product.price}</p>
                 </div>
-                <div className="absolute top-4 right-4 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   View
                 </div>
               </Link>
@@ -425,12 +427,12 @@ export default function Home() {
       )}
 
       {/* Products Section - Enhanced */}
-      <section id="products" className="container mx-auto px-4 py-16 md:py-24">
-        <div className="text-center mb-12 animate-slide-in">
-          <h2 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
+      <section id="products" className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-24">
+        <div className="text-center mb-8 sm:mb-12 animate-slide-in">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold gradient-text mb-3 sm:mb-4">
             All Products
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Explore our curated collection of premium products designed to
             enhance your lifestyle
           </p>
@@ -463,64 +465,64 @@ export default function Home() {
       {/* Features Section - Enhanced */}
       <section
         id="features"
-        className="bg-gradient-to-br from-gray-50 to-indigo-50 py-20"
+        className="bg-gradient-to-br from-gray-50 to-indigo-50 py-12 sm:py-16 md:py-20"
       >
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold gradient-text mb-3 sm:mb-4">
               Why Choose Us
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               We are committed to providing the best shopping experience
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Shield className="w-10 h-10 text-white" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-md sm:shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
                 Quality Guaranteed
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 All products are carefully selected and tested for quality
                 assurance
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Truck className="w-10 h-10 text-white" />
+            <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-md sm:shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                <Truck className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
                 Fast Shipping
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 Quick and reliable delivery to your doorstep worldwide
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Star className="w-10 h-10 text-white" />
+            <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-md sm:shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                <Star className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
                 Premium Support
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 24/7 customer support to help you with any questions
               </p>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Sparkles className="w-10 h-10 text-white" />
+            <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-md sm:shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
                 Secure Payment
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                 Your payment information is safe and encrypted with Stripe
               </p>
             </div>
@@ -529,24 +531,24 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <section className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-12 sm:py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
-              <div className="text-4xl md:text-5xl font-bold mb-2">10K+</div>
-              <div className="text-indigo-200">Happy Customers</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">10K+</div>
+              <div className="text-sm sm:text-base text-indigo-200">Happy Customers</div>
             </div>
             <div>
-              <div className="text-4xl md:text-5xl font-bold mb-2">500+</div>
-              <div className="text-indigo-200">Products</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">500+</div>
+              <div className="text-sm sm:text-base text-indigo-200">Products</div>
             </div>
             <div>
-              <div className="text-4xl md:text-5xl font-bold mb-2">50+</div>
-              <div className="text-indigo-200">Countries</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">50+</div>
+              <div className="text-sm sm:text-base text-indigo-200">Countries</div>
             </div>
             <div>
-              <div className="text-4xl md:text-5xl font-bold mb-2">24/7</div>
-              <div className="text-indigo-200">Support</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">24/7</div>
+              <div className="text-sm sm:text-base text-indigo-200">Support</div>
             </div>
           </div>
         </div>
