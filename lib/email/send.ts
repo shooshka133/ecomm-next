@@ -72,7 +72,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
 
     // Render React email component to HTML
     console.log('🔍 [Email] Rendering email template...')
-    const emailHtml = render(React.createElement(OrderConfirmationEmail, data))
+    const emailHtml = await render(React.createElement(OrderConfirmationEmail, data))
     console.log('✅ [Email] Template rendered successfully')
     console.log('🔍 [Email] HTML type:', typeof emailHtml)
     console.log('🔍 [Email] HTML length:', emailHtml?.length || 0)
@@ -81,7 +81,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
       from: `Ecommerce Start <${FROM_EMAIL}>`,
       to: [data.customerEmail],
       subject: `Order Confirmation #${data.orderNumber} - Thank You!`,
-      html: String(emailHtml),
+      html: emailHtml,
     })
 
     if (error) {
@@ -112,13 +112,13 @@ export async function sendShippingNotificationEmail(data: ShippingEmailData) {
     console.log(`📧 Sending shipping notification email to ${data.customerEmail}`)
 
     // Render React email component to HTML
-    const emailHtml = render(React.createElement(ShippingNotificationEmail, data))
+    const emailHtml = await render(React.createElement(ShippingNotificationEmail, data))
 
     const { data: emailData, error } = await resend.emails.send({
       from: `Ecommerce Start <${FROM_EMAIL}>`,
       to: [data.customerEmail],
       subject: `Your Order #${data.orderNumber} Has Shipped! 📦`,
-      html: String(emailHtml),
+      html: emailHtml,
     })
 
     if (error) {
@@ -151,14 +151,14 @@ export async function sendDeliveryNotificationEmail(data: DeliveryEmailData) {
 
     // Render React email component to HTML
     console.log('🔍 [Email] Rendering delivery email template...')
-    const emailHtml = render(React.createElement(DeliveryNotificationEmail, data))
+    const emailHtml = await render(React.createElement(DeliveryNotificationEmail, data))
     console.log('✅ [Email] Template rendered successfully')
 
     const { data: emailData, error } = await resend.emails.send({
       from: `Ecommerce Start <${FROM_EMAIL}>`,
       to: [data.customerEmail],
       subject: `Your Order #${data.orderNumber} Has Been Delivered! 🎉`,
-      html: String(emailHtml),
+      html: emailHtml,
     })
 
     if (error) {
