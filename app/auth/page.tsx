@@ -22,52 +22,59 @@ export default function AuthPage() {
   const supabase = createSupabaseClient()
 
   // Auto-retry OAuth if PKCE error occurred (incognito mode fix)
+  // Completely silent - no error message shown, just automatically retry
   useEffect(() => {
     const oauthRetry = searchParams.get('oauth_retry')
     const provider = searchParams.get('provider')
     const next = searchParams.get('next') || '/'
     
     if (oauthRetry === 'true' && provider === 'google') {
-      console.log('🔄 [Auth] Auto-retrying Google OAuth due to PKCE error (incognito mode)')
-      setMessageType('error')
-      setMessage('Retrying sign-in...')
+      console.log('🔄 [Auth] Auto-retrying Google OAuth due to PKCE error (incognito mode) - silent retry')
       setGoogleLoading(true)
+      // Don't show any error message - make it completely seamless
       
-      // Small delay to ensure component is fully mounted
+      // Small delay to ensure component is fully mounted and state is ready
       const retryTimer = setTimeout(() => {
         // Automatically trigger Google OAuth with fresh state
         signInWithGoogle({
           redirectTo: next,
           onError: (error) => {
+            // Only show error if retry also fails
+            console.error('❌ [Auth] Auto-retry OAuth failed:', error)
             setMessageType('error')
-            setMessage(error || 'Failed to retry sign-in. Please try again.')
+            setMessage('Sign-in failed. Please try again.')
             setGoogleLoading(false)
           },
           onSuccess: () => {
-            console.log('✅ [Auth] Auto-retry OAuth initiated successfully')
+            console.log('✅ [Auth] Auto-retry OAuth initiated successfully - redirecting...')
             // Loading state will be maintained until redirect happens
+            // User will see loading spinner, then redirect to Google
           },
         }).catch((err) => {
-          console.error('❌ [Auth] Auto-retry OAuth failed:', err)
+          console.error('❌ [Auth] Auto-retry OAuth exception:', err)
           setMessageType('error')
-          setMessage('Failed to retry sign-in. Please click the Google sign-in button.')
+          setMessage('Sign-in failed. Please try again.')
           setGoogleLoading(false)
         })
-      }, 500) // Small delay to ensure state is set
+      }, 300) // Small delay to ensure state is set
       
       return () => clearTimeout(retryTimer)
     }
   }, [searchParams])
 
   // Check for error from callback
+  // Don't show errors during auto-retry (incognito mode fix)
   useEffect(() => {
     const error = searchParams.get('error')
     const oauthRetry = searchParams.get('oauth_retry')
     
-    // Don't show error if we're auto-retrying
+    // Don't show error if we're auto-retrying (silent retry)
     if (error && oauthRetry !== 'true') {
       setMessageType('error')
       setMessage(decodeURIComponent(error))
+    } else if (error && oauthRetry === 'true') {
+      // Silently ignore error during auto-retry - we'll retry automatically
+      console.log('🔄 [Auth] PKCE error detected, auto-retrying silently...')
     }
   }, [searchParams])
 

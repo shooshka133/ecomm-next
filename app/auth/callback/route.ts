@@ -76,13 +76,15 @@ export async function GET(request: NextRequest) {
         })
         
         // Automatically retry OAuth flow by redirecting to auth page with retry flag
-        // This will trigger a fresh OAuth flow without user needing to click again
+        // This will trigger a fresh OAuth flow silently - no error message shown to user
+        // Perfect for incognito mode where browser storage is cleared
         const retryUrl = new URL('/auth', url.origin)
         retryUrl.searchParams.set('oauth_retry', 'true')
         retryUrl.searchParams.set('provider', 'google')
         retryUrl.searchParams.set('next', next)
+        // Note: No error parameter - this is a silent retry
         
-        log('Auto-retrying OAuth flow due to PKCE error')
+        log('Auto-retrying OAuth flow due to PKCE error (silent retry for incognito mode)')
         
         return NextResponse.redirect(retryUrl)
       }
