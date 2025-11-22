@@ -10,19 +10,13 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Logging helper (replace with proper logging service in production)
+// Logging helper - ALWAYS log in production for debugging
 const log = (message: string, data?: any) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(message, data || '')
-  }
-  // In production, send to logging service (e.g., Sentry, LogRocket)
+  console.log(`[Webhook] ${message}`, data || '')
 }
 
 const logError = (message: string, error?: any) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.error(message, error || '')
-  }
-  // In production, send to error tracking service
+  console.error(`[Webhook ERROR] ${message}`, error || '')
 }
 
 export async function POST(request: NextRequest) {
@@ -58,10 +52,18 @@ export async function POST(request: NextRequest) {
     const userId = session.metadata?.user_id
     const sessionId = session.id
 
+    log('Checkout session completed', { sessionId, userId })
+
     if (!userId) {
-      logError('Webhook: No user_id in session metadata', { sessionId })
+      logError('No user_id in session metadata', { sessionId })
       return NextResponse.json({ error: 'No user_id' }, { status: 400 })
     }
+    
+    // Check email configuration
+    log('Email configuration check:', {
+      hasResendKey: !!process.env.RESEND_API_KEY,
+      fromEmail: process.env.RESEND_FROM_EMAIL || 'NOT SET'
+    })
 
     // Check if order already exists for this session to prevent duplicates
     const { data: existingOrder } = await supabaseAdmin
@@ -180,21 +182,50 @@ export async function POST(request: NextRequest) {
     }
 
     // Send order confirmation email
+    let customerEmail = 'customer@example.com'
+    let customerName = 'Customer'
+    
     try {
-      log('Webhook: Preparing to send email...')
+      log('Preparing to send email...')
       
-      // Get user details for email
+      // Get user email from Supabase auth (most reliable)
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId)
+      
+      if (authError) {
+        logError('Failed to fetch user from auth', authError)
+      }
+      
+      // Get user profile details
       const { data: userData } = await supabaseAdmin
         .from('profiles')
         .select('full_name')
         .eq('id', userId)
         .single()
 
-      // Get user email from session metadata or auth
-      const customerEmail = session.customer_details?.email || session.metadata?.email || 'customer@example.com'
-      const customerName = userData?.full_name || session.customer_details?.name || 'Customer'
+      // Get user email - prioritize Supabase auth, then Stripe session
+      customerEmail = authUser?.user?.email || session.customer_details?.email || session.metadata?.email || 'customer@example.com'
+      customerName = userData?.full_name || session.customer_details?.name || authUser?.user?.email?.split('@')[0] || 'Customer'
 
-      log('Webhook: Email will be sent to:', { email: customerEmail, name: customerName })
+      log('Email will be sent to:', { 
+        email: customerEmail, 
+        name: customerName,
+        source: authUser?.user?.email ? 'Supabase Auth' : 'Stripe Session'
+      })
+      
+      if (!customerEmail || customerEmail === 'customer@example.com') {
+        logError('CRITICAL: No valid customer email found!', {
+          userId,
+          authUserEmail: authUser?.user?.email,
+          stripeEmail: session.customer_details?.email,
+          metadataEmail: session.metadata?.email
+        })
+        // Don't send email if we don't have a valid email
+        return NextResponse.json({ 
+          received: true, 
+          orderId: order.id,
+          message: 'Order created successfully but email not sent (no email address)'
+        })
+      }
 
       // Prepare order items for email
       const emailOrderItems = cartItems.map((item: any) => ({
@@ -204,7 +235,14 @@ export async function POST(request: NextRequest) {
         image_url: item.products?.image_url,
       }))
 
-      log('Webhook: Calling sendOrderConfirmationEmail...')
+      log('Calling sendOrderConfirmationEmail...')
+      log('Email data:', {
+        orderNumber: order.id.substring(0, 8).toUpperCase(),
+        customerEmail,
+        customerName,
+        itemCount: emailOrderItems.length,
+        total
+      })
       
       // Send the email (don't fail if email fails)
       const emailResult = await sendOrderConfirmationEmail({
@@ -221,16 +259,27 @@ export async function POST(request: NextRequest) {
         trackingNumber: undefined, // Will be set when shipped
       })
 
-      log('Webhook: Email function returned:', emailResult)
+      log('Email function returned:', JSON.stringify(emailResult, null, 2))
       
       if (emailResult.success) {
-        log('Webhook: ✅ Order confirmation email sent successfully!', { email: customerEmail })
+        log('✅ Order confirmation email sent successfully!', { 
+          email: customerEmail,
+          emailId: emailResult.emailId 
+        })
       } else {
-        logError('Webhook: ❌ Email sending failed', emailResult.error)
+        logError('❌ Email sending failed', {
+          error: emailResult.error,
+          customerEmail,
+          orderId: order.id
+        })
       }
     } catch (emailError: any) {
-      logError('Webhook: Failed to send confirmation email (exception)', emailError)
-      console.error('Full email error:', emailError)
+      logError('Failed to send confirmation email (exception)', {
+        error: emailError,
+        message: emailError?.message,
+        stack: emailError?.stack,
+        customerEmail: customerEmail || 'unknown'
+      })
       // Don't fail the webhook if email fails - order is still created
     }
 
