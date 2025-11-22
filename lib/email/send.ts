@@ -57,13 +57,22 @@ export interface DeliveryEmailData {
 export async function sendOrderConfirmationEmail(data: OrderEmailData) {
   try {
     console.log('🔍 [Email] Starting sendOrderConfirmationEmail...')
-    console.log('🔍 [Email] RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
-    console.log('🔍 [Email] FROM_EMAIL:', FROM_EMAIL)
-    console.log('🔍 [Email] TO_EMAIL:', data.customerEmail)
+    console.log('🔍 [Email] Environment check:')
+    console.log('  - NODE_ENV:', process.env.NODE_ENV)
+    console.log('  - RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
+    console.log('  - RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0)
+    console.log('  - RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL || 'NOT SET')
+    console.log('  - FROM_EMAIL (final):', FROM_EMAIL)
+    console.log('  - TO_EMAIL:', data.customerEmail)
     
     if (!process.env.RESEND_API_KEY) {
-      console.warn('⚠️  RESEND_API_KEY not set. Skipping email send.')
-      return { success: false, error: 'API key not configured' }
+      console.error('❌ [Email] RESEND_API_KEY not set in environment variables!')
+      console.error('❌ [Email] This usually means environment variables are not configured in Vercel')
+      return { success: false, error: 'API key not configured - check Vercel environment variables' }
+    }
+    
+    if (!process.env.RESEND_FROM_EMAIL || FROM_EMAIL === 'onboarding@resend.dev') {
+      console.warn('⚠️  [Email] RESEND_FROM_EMAIL not set or using default. Using:', FROM_EMAIL)
     }
 
     console.log(`📧 Sending order confirmation email to ${data.customerEmail}`)
@@ -87,7 +96,16 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
     if (error) {
       console.error('❌ Failed to send order confirmation email:', error)
       console.error('❌ Error details:', JSON.stringify(error, null, 2))
-      return { success: false, error: error.message }
+      
+      // Provide helpful error message for common issues
+      let errorMessage = error.message || 'Unknown error'
+      if (error.message?.includes('Not authorized to send emails from')) {
+        errorMessage = `Domain not verified in Resend: ${FROM_EMAIL}. Please verify the domain in Resend dashboard or use a verified domain. See RESEND_DOMAIN_VERIFICATION.md for instructions.`
+      } else if (error.message?.includes('API key')) {
+        errorMessage = `Resend API key issue: ${error.message}. Check RESEND_API_KEY in Vercel environment variables.`
+      }
+      
+      return { success: false, error: errorMessage }
     }
 
     console.log(`✅ Order confirmation email sent successfully! ID: ${emailData?.id}`)
