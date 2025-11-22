@@ -1,3 +1,4 @@
+import React from 'react'
 import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import OrderConfirmationEmail from './templates/OrderConfirmation'
@@ -71,9 +72,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
 
     // Render React email component to HTML
     console.log('🔍 [Email] Rendering email template...')
-    const emailHtml = await render(OrderConfirmationEmail(data), {
-      pretty: false,
-    })
+    const emailHtml = render(React.createElement(OrderConfirmationEmail, data))
     console.log('✅ [Email] Template rendered successfully')
     console.log('🔍 [Email] HTML type:', typeof emailHtml)
     console.log('🔍 [Email] HTML length:', emailHtml?.length || 0)
@@ -113,9 +112,7 @@ export async function sendShippingNotificationEmail(data: ShippingEmailData) {
     console.log(`📧 Sending shipping notification email to ${data.customerEmail}`)
 
     // Render React email component to HTML
-    const emailHtml = await render(ShippingNotificationEmail(data), {
-      pretty: false,
-    })
+    const emailHtml = render(React.createElement(ShippingNotificationEmail, data))
 
     const { data: emailData, error } = await resend.emails.send({
       from: `Ecommerce Start <${FROM_EMAIL}>`,
@@ -154,9 +151,7 @@ export async function sendDeliveryNotificationEmail(data: DeliveryEmailData) {
 
     // Render React email component to HTML
     console.log('🔍 [Email] Rendering delivery email template...')
-    const emailHtml = await render(DeliveryNotificationEmail(data), {
-      pretty: false,
-    })
+    const emailHtml = render(React.createElement(DeliveryNotificationEmail, data))
     console.log('✅ [Email] Template rendered successfully')
 
     const { data: emailData, error } = await resend.emails.send({
