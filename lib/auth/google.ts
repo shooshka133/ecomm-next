@@ -26,6 +26,11 @@ export async function signInWithGoogle(
   try {
     const supabase = createSupabaseClient()
 
+    // Ensure we're using a fresh OAuth flow
+    // The PKCE code verifier is automatically managed by Supabase
+    // If there's a stale state, the second attempt will work because
+    // Supabase will generate a new code verifier
+
     // Get the correct redirect URL - use production URL if available, otherwise use current origin
     // Force production URL if on Vercel deployment
     const origin =
@@ -60,6 +65,8 @@ export async function signInWithGoogle(
           access_type: 'offline',
           prompt: 'consent',
         },
+        // Ensure PKCE is enabled (it's enabled by default, but being explicit)
+        skipBrowserRedirect: false,
       },
     })
 

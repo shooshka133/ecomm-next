@@ -63,6 +63,23 @@ export async function GET(request: NextRequest) {
         status: exchangeError.status,
         code: exchangeError.code
       })
+      
+      // Handle PKCE (code verifier) errors specifically
+      if (exchangeError.message?.includes('code verifier') || 
+          exchangeError.message?.includes('code_challenge') ||
+          exchangeError.message?.includes('non-empty')) {
+        logError('PKCE Error detected - code verifier missing. This usually happens when:', {
+          reason: 'Browser storage was cleared or OAuth flow was interrupted',
+          solution: 'User should try signing in again - the second attempt usually works',
+          error: exchangeError.message
+        })
+        
+        // Redirect with a helpful error message
+        return NextResponse.redirect(
+          new URL(`/auth?error=${encodeURIComponent('OAuth session expired. Please try signing in again.')}`, url.origin)
+        )
+      }
+      
       return NextResponse.redirect(
         new URL(`/auth?error=${encodeURIComponent(exchangeError.message || 'Authentication failed')}`, url.origin)
       )
