@@ -55,7 +55,6 @@ export default function CheckoutSuccessPage() {
           console.log('📦 Order ID:', existingOrder.id)
           console.log('👤 Order User ID:', existingOrder.user_id)
           console.log('💳 Stripe Payment Intent:', existingOrder.stripe_payment_intent_id)
-          console.log('📋 Full Order:', JSON.stringify(existingOrder))
           
           // Order exists, just clear cart if needed and update count
           const { data: cartItems } = await supabase
@@ -72,40 +71,49 @@ export default function CheckoutSuccessPage() {
             window.dispatchEvent(new Event('cartUpdated'))
           }
           
-          // Send email for existing order (in case webhook didn't send it)
-          // Wait a moment to ensure order is fully committed to database
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          // Check if email was already sent for this order (prevent duplicates on refresh)
+          const emailSentKey = `order_email_sent_${existingOrder.id}`
+          const emailAlreadySent = typeof window !== 'undefined' && localStorage.getItem(emailSentKey) === 'true'
           
-          try {
-            console.log('📧 Attempting to send email...')
-            console.log('📧 Order ID:', existingOrder.id)
-            console.log('📧 User ID:', user.id)
+          if (!emailAlreadySent) {
+            // Send email for existing order (in case webhook didn't send it)
+            // Wait a moment to ensure order is fully committed to database
+            await new Promise(resolve => setTimeout(resolve, 1000))
             
-            const response = await fetch('/api/send-order-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                orderId: existingOrder.id,
-                userId: user.id,
-              }),
-            })
-            
-            if (!response.ok) {
-              const errorText = await response.text()
-              console.error('❌ Email API HTTP error:', response.status, errorText)
-              return
+            try {
+              console.log('📧 Attempting to send email for order:', existingOrder.id)
+              
+              const response = await fetch('/api/send-order-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: existingOrder.id,
+                  userId: user.id,
+                }),
+              })
+              
+              if (!response.ok) {
+                const errorText = await response.text()
+                console.error('❌ Email API HTTP error:', response.status, errorText)
+              } else {
+                const result = await response.json()
+                console.log('📧 Email API response:', result)
+                
+                if (result.success) {
+                  console.log('✅ Email sent successfully!')
+                  // Mark email as sent to prevent duplicates on refresh
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem(emailSentKey, 'true')
+                  }
+                } else {
+                  console.error('❌ Email API returned error:', result.error)
+                }
+              }
+            } catch (emailError) {
+              console.error('❌ Failed to send email (exception):', emailError)
             }
-            
-            const result = await response.json()
-            console.log('📧 Email API response:', result)
-            
-            if (result.success) {
-              console.log('✅ Email sent successfully!')
-            } else {
-              console.error('❌ Email API returned error:', result.error)
-            }
-          } catch (emailError) {
-            console.error('❌ Failed to send email (exception):', emailError)
+          } else {
+            console.log('📧 Email already sent for this order, skipping to prevent duplicate')
           }
           
           setProcessing(false)
@@ -234,19 +242,30 @@ export default function CheckoutSuccessPage() {
               
               console.log('Order created manually:', order.id)
               
-              // Send order confirmation email
-              try {
-                await fetch('/api/send-order-email', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    orderId: order.id,
-                    userId: user.id,
-                  }),
-                })
-                console.log('📧 Email sent for new order')
-              } catch (emailError) {
-                console.error('Failed to send email:', emailError)
+              // Send order confirmation email (only if not already sent)
+              const emailSentKey = `order_email_sent_${order.id}`
+              const emailAlreadySent = typeof window !== 'undefined' && localStorage.getItem(emailSentKey) === 'true'
+              
+              if (!emailAlreadySent) {
+                try {
+                  await fetch('/api/send-order-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      orderId: order.id,
+                      userId: user.id,
+                    }),
+                  })
+                  console.log('📧 Email sent for new order')
+                  // Mark email as sent to prevent duplicates on refresh
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem(emailSentKey, 'true')
+                  }
+                } catch (emailError) {
+                  console.error('Failed to send email:', emailError)
+                }
+              } else {
+                console.log('📧 Email already sent for this order, skipping to prevent duplicate')
               }
               
               // Dispatch event to update cart count
