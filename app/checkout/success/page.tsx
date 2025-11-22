@@ -34,15 +34,29 @@ export default function CheckoutSuccessPage() {
       setProcessing(true)
       
       try {
+        console.log('🔍 [Success Page] Starting order processing...')
+        console.log('🔍 [Success Page] Session ID:', sessionId)
+        console.log('🔍 [Success Page] User ID:', user.id)
+        
         // First, check if order already exists for this session
-        const { data: existingOrder } = await supabase
+        console.log('🔍 [Success Page] Checking for existing order...')
+        const { data: existingOrder, error: existingOrderError } = await supabase
           .from('orders')
           .select('*')
           .eq('stripe_payment_intent_id', sessionId)
           .single()
         
+        if (existingOrderError) {
+          console.log('ℹ️ [Success Page] No existing order found (expected for first load):', existingOrderError.code)
+        }
+        
         if (existingOrder) {
-          console.log('Order already exists for this session:', existingOrder.id)
+          console.log('✅ Order already exists for this session')
+          console.log('📦 Order ID:', existingOrder.id)
+          console.log('👤 Order User ID:', existingOrder.user_id)
+          console.log('💳 Stripe Payment Intent:', existingOrder.stripe_payment_intent_id)
+          console.log('📋 Full Order:', JSON.stringify(existingOrder))
+          
           // Order exists, just clear cart if needed and update count
           const { data: cartItems } = await supabase
             .from('cart_items')
@@ -58,6 +72,42 @@ export default function CheckoutSuccessPage() {
             window.dispatchEvent(new Event('cartUpdated'))
           }
           
+          // Send email for existing order (in case webhook didn't send it)
+          // Wait a moment to ensure order is fully committed to database
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          try {
+            console.log('📧 Attempting to send email...')
+            console.log('📧 Order ID:', existingOrder.id)
+            console.log('📧 User ID:', user.id)
+            
+            const response = await fetch('/api/send-order-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: existingOrder.id,
+                userId: user.id,
+              }),
+            })
+            
+            if (!response.ok) {
+              const errorText = await response.text()
+              console.error('❌ Email API HTTP error:', response.status, errorText)
+              return
+            }
+            
+            const result = await response.json()
+            console.log('📧 Email API response:', result)
+            
+            if (result.success) {
+              console.log('✅ Email sent successfully!')
+            } else {
+              console.error('❌ Email API returned error:', result.error)
+            }
+          } catch (emailError) {
+            console.error('❌ Failed to send email (exception):', emailError)
+          }
+          
           setProcessing(false)
           setLoading(false)
           router.refresh()
@@ -65,9 +115,11 @@ export default function CheckoutSuccessPage() {
         }
         
         // Wait 3 seconds for webhook to process
+        console.log('⏳ [Success Page] Waiting 3 seconds for webhook...')
         await new Promise(resolve => setTimeout(resolve, 3000))
         
         // Check again if order was created by webhook
+        console.log('🔍 [Success Page] Checking if webhook created order...')
         const { data: orderAfterWait } = await supabase
           .from('orders')
           .select('*')
@@ -75,7 +127,7 @@ export default function CheckoutSuccessPage() {
           .single()
         
         if (orderAfterWait) {
-          console.log('Order created by webhook:', orderAfterWait.id)
+          console.log('✅ [Success Page] Order created by webhook:', orderAfterWait.id)
           // Order exists now, just clear cart if needed
           const { data: cartItems } = await supabase
             .from('cart_items')
@@ -97,14 +149,17 @@ export default function CheckoutSuccessPage() {
         }
         
         // Check if cart is empty (webhook cleared it but didn't create order)
+        console.log('🔍 [Success Page] Checking cart status...')
         const { data: cartItems } = await supabase
           .from('cart_items')
           .select('*')
           .eq('user_id', user.id)
         
+        console.log(`📦 [Success Page] Cart has ${cartItems?.length || 0} items`)
+        
         // Only create order if cart still has items (webhook didn't work)
         if (cartItems && cartItems.length > 0) {
-          console.log('Webhook may have failed, creating order manually...')
+          console.log('⚠️ [Success Page] Webhook may have failed, creating order manually...')
           
           // Double-check no order exists
           const { data: finalCheck } = await supabase
@@ -179,13 +234,33 @@ export default function CheckoutSuccessPage() {
               
               console.log('Order created manually:', order.id)
               
+              // Send order confirmation email
+              try {
+                await fetch('/api/send-order-email', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    orderId: order.id,
+                    userId: user.id,
+                  }),
+                })
+                console.log('📧 Email sent for new order')
+              } catch (emailError) {
+                console.error('Failed to send email:', emailError)
+              }
+              
               // Dispatch event to update cart count
               window.dispatchEvent(new Event('cartUpdated'))
             }
           }
+        } else {
+          // Cart is empty but no order was created - unexpected!
+          console.error('⚠️ [Success Page] Cart is empty but no order exists!')
+          console.error('⚠️ [Success Page] This means webhook cleared cart but failed to create order')
+          console.error('⚠️ [Success Page] Or this is a page refresh after order was already processed')
         }
       } catch (error) {
-        console.error('Error processing order:', error)
+        console.error('❌ [Success Page] Error processing order:', error)
       } finally {
         setProcessing(false)
         setLoading(false)

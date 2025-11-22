@@ -23,6 +23,10 @@ STRIPE_SECRET_KEY=sk_live_xxxxxxxxxxxxxxxxxxxxx
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxxxxxxxxxxxxxxxxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxx
 
+# Resend Email Configuration
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxx
+RESEND_FROM_EMAIL=orders@shooshka.online  # or onboarding@resend.dev for testing
+
 # Application Configuration
 NEXT_PUBLIC_APP_URL=https://shooshka.online
 NODE_ENV=production
@@ -62,6 +66,26 @@ NODE_ENV=production
 8. Add this secret to your environment variables
 
 **Note:** The webhook URL is configured in Stripe Dashboard, NOT as an environment variable. Only the `STRIPE_WEBHOOK_SECRET` goes in environment variables.
+
+### Resend Email Keys
+
+1. Go to: https://resend.com
+2. Sign up for free account (3,000 emails/month, 100/day)
+3. Go to: https://resend.com/api-keys
+4. Click **"Create API Key"**
+5. Copy **API key** → `RESEND_API_KEY` (starts with `re_`)
+
+**For From Email:**
+- **Testing/Development:** Use `onboarding@resend.dev` (works immediately)
+- **Production:** Add your domain in Resend and use `orders@yourdomain.com`
+
+**To Add Custom Domain:**
+1. Go to: https://resend.com/domains
+2. Click **"Add Domain"**
+3. Enter your domain: `shooshka.online`
+4. Add DNS records to your domain provider (TXT, MX records)
+5. Wait for verification (5-30 minutes)
+6. Use: `orders@shooshka.online` or `support@shooshka.online`
 
 ### App URL
 

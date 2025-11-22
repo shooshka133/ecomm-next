@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
+import { sendOrderConfirmationEmail } from '@/lib/email/send'
 
 // Use service role key for webhook to bypass RLS
 const supabaseAdmin = createClient(
@@ -176,6 +177,61 @@ export async function POST(request: NextRequest) {
       } else {
         log('Webhook: Removed purchased items from wishlist', { count: purchasedProductIds.length })
       }
+    }
+
+    // Send order confirmation email
+    try {
+      log('Webhook: Preparing to send email...')
+      
+      // Get user details for email
+      const { data: userData } = await supabaseAdmin
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single()
+
+      // Get user email from session metadata or auth
+      const customerEmail = session.customer_details?.email || session.metadata?.email || 'customer@example.com'
+      const customerName = userData?.full_name || session.customer_details?.name || 'Customer'
+
+      log('Webhook: Email will be sent to:', { email: customerEmail, name: customerName })
+
+      // Prepare order items for email
+      const emailOrderItems = cartItems.map((item: any) => ({
+        name: item.products?.name || 'Product',
+        price: item.products?.price || 0,
+        quantity: item.quantity,
+        image_url: item.products?.image_url,
+      }))
+
+      log('Webhook: Calling sendOrderConfirmationEmail...')
+      
+      // Send the email (don't fail if email fails)
+      const emailResult = await sendOrderConfirmationEmail({
+        orderNumber: order.id.substring(0, 8).toUpperCase(),
+        customerName,
+        customerEmail,
+        orderItems: emailOrderItems,
+        total,
+        orderDate: new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        trackingNumber: undefined, // Will be set when shipped
+      })
+
+      log('Webhook: Email function returned:', emailResult)
+      
+      if (emailResult.success) {
+        log('Webhook: ✅ Order confirmation email sent successfully!', { email: customerEmail })
+      } else {
+        logError('Webhook: ❌ Email sending failed', emailResult.error)
+      }
+    } catch (emailError: any) {
+      logError('Webhook: Failed to send confirmation email (exception)', emailError)
+      console.error('Full email error:', emailError)
+      // Don't fail the webhook if email fails - order is still created
     }
 
     return NextResponse.json({ 
