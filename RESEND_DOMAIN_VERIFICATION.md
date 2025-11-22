@@ -1,11 +1,33 @@
 # 🔐 Resend Domain Verification for store.shooshka.online
 
-## Error Message
+## Error Messages
+
+### Error 1: Domain Not Authorized
 ```
 Not authorized to send emails from store.shooshka.online
 ```
 
-This means the domain `store.shooshka.online` is not verified in Resend.
+### Error 2: Test Domain Limitation (Current Issue)
+```
+You can only send testing emails to your own email address (ashrahalimo@gmail.com). 
+To send emails to other recipients, please verify a domain at resend.com/domains, 
+and change the `from` address to an email using this domain.
+```
+
+**Both errors mean:** The domain `store.shooshka.online` is not verified in Resend.
+
+**Why this matters:** 
+- `onboarding@resend.dev` (test domain) can ONLY send to your account email (`ashrahalimo@gmail.com`)
+- To send to customers, you MUST verify your own domain (`store.shooshka.online`)
+
+---
+
+## 🚨 Current Situation
+
+- ✅ Emails work locally (using your local `.env.local`)
+- ❌ Emails don't work in production (Vercel)
+- ❌ Using `onboarding@resend.dev` only allows sending to `ashrahalimo@gmail.com`
+- ✅ **Solution:** Verify `store.shooshka.online` in Resend to send to any customer
 
 ---
 
@@ -68,19 +90,26 @@ If you need emails working **right now**, you can temporarily use a verified dom
 
 1. Go to **Vercel Dashboard** → **Settings** → **Environment Variables**
 2. Find `RESEND_FROM_EMAIL`
-3. Change it to: `orders@shooshka.online` (if `shooshka.online` is verified)
+3. Change it to: `orders@shooshka.online` (if `shooshka.online` is verified in Resend)
 4. Click **Save**
 5. **Redeploy** your project
 
-### Option B: Use Resend's Test Domain (for testing only)
+### Option B: Use Resend's Test Domain (LIMITED - Only sends to your email!)
 
+⚠️ **WARNING**: `onboarding@resend.dev` can ONLY send emails to your Resend account email (`ashrahalimo@gmail.com`). It will NOT work for customer emails!
+
+**Only use this if:**
+- You're testing and sending to yourself
+- You understand it won't work for customers
+
+**To use:**
 1. Go to **Vercel Dashboard** → **Settings** → **Environment Variables**
 2. Find `RESEND_FROM_EMAIL`
 3. Change it to: `onboarding@resend.dev`
 4. Click **Save**
 5. **Redeploy** your project
 
-⚠️ **Note**: `onboarding@resend.dev` is for testing only. For production, you must verify your domain.
+⚠️ **Note**: For production with real customers, you MUST verify `store.shooshka.online` (see steps below).
 
 ---
 
