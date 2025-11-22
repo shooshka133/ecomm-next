@@ -69,15 +69,22 @@ export async function GET(request: NextRequest) {
           exchangeError.message?.includes('code_challenge') ||
           exchangeError.message?.includes('non-empty')) {
         logError('PKCE Error detected - code verifier missing. This usually happens when:', {
-          reason: 'Browser storage was cleared or OAuth flow was interrupted',
-          solution: 'User should try signing in again - the second attempt usually works',
-          error: exchangeError.message
+          reason: 'Browser storage was cleared (incognito mode) or OAuth flow was interrupted',
+          solution: 'Automatically retrying OAuth flow',
+          error: exchangeError.message,
+          isIncognito: 'Likely - storage cleared between redirects'
         })
         
-        // Redirect with a helpful error message
-        return NextResponse.redirect(
-          new URL(`/auth?error=${encodeURIComponent('OAuth session expired. Please try signing in again.')}`, url.origin)
-        )
+        // Automatically retry OAuth flow by redirecting to auth page with retry flag
+        // This will trigger a fresh OAuth flow without user needing to click again
+        const retryUrl = new URL('/auth', url.origin)
+        retryUrl.searchParams.set('oauth_retry', 'true')
+        retryUrl.searchParams.set('provider', 'google')
+        retryUrl.searchParams.set('next', next)
+        
+        log('Auto-retrying OAuth flow due to PKCE error')
+        
+        return NextResponse.redirect(retryUrl)
       }
       
       return NextResponse.redirect(

@@ -21,10 +21,51 @@ export default function AuthPage() {
   const searchParams = useSearchParams()
   const supabase = createSupabaseClient()
 
+  // Auto-retry OAuth if PKCE error occurred (incognito mode fix)
+  useEffect(() => {
+    const oauthRetry = searchParams.get('oauth_retry')
+    const provider = searchParams.get('provider')
+    const next = searchParams.get('next') || '/'
+    
+    if (oauthRetry === 'true' && provider === 'google') {
+      console.log('🔄 [Auth] Auto-retrying Google OAuth due to PKCE error (incognito mode)')
+      setMessageType('error')
+      setMessage('Retrying sign-in...')
+      setGoogleLoading(true)
+      
+      // Small delay to ensure component is fully mounted
+      const retryTimer = setTimeout(() => {
+        // Automatically trigger Google OAuth with fresh state
+        signInWithGoogle({
+          redirectTo: next,
+          onError: (error) => {
+            setMessageType('error')
+            setMessage(error || 'Failed to retry sign-in. Please try again.')
+            setGoogleLoading(false)
+          },
+          onSuccess: () => {
+            console.log('✅ [Auth] Auto-retry OAuth initiated successfully')
+            // Loading state will be maintained until redirect happens
+          },
+        }).catch((err) => {
+          console.error('❌ [Auth] Auto-retry OAuth failed:', err)
+          setMessageType('error')
+          setMessage('Failed to retry sign-in. Please click the Google sign-in button.')
+          setGoogleLoading(false)
+        })
+      }, 500) // Small delay to ensure state is set
+      
+      return () => clearTimeout(retryTimer)
+    }
+  }, [searchParams])
+
   // Check for error from callback
   useEffect(() => {
     const error = searchParams.get('error')
-    if (error) {
+    const oauthRetry = searchParams.get('oauth_retry')
+    
+    // Don't show error if we're auto-retrying
+    if (error && oauthRetry !== 'true') {
       setMessageType('error')
       setMessage(decodeURIComponent(error))
     }
@@ -45,7 +86,9 @@ export default function AuthPage() {
     
     // Only check if we're not in the middle of an OAuth flow
     const code = searchParams.get('code')
-    if (!code) {
+    const oauthRetry = searchParams.get('oauth_retry')
+    
+    if (!code && !oauthRetry) {
       checkSession()
     }
   }, [supabase, router, searchParams])
