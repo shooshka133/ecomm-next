@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendShippingNotificationEmail } from '@/lib/email/send'
 
 // Use service role key for admin access
 const supabaseAdmin = createClient(
@@ -45,17 +46,86 @@ export async function GET(request: NextRequest) {
     // Send email for each shipped order
     for (const order of shippedOrders) {
       try {
-        console.log(`📧 [Bulk Shipping Email] Sending for order: ${order.id}`)
+        console.log(`📧 [Bulk Shipping Email] Processing order: ${order.id}`)
         
-        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/send-shipping-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId: order.id }),
+        // Get full order details with items
+        const { data: fullOrder, error: orderError } = await supabaseAdmin
+          .from('orders')
+          .select('*, order_items(*, products(*))')
+          .eq('id', order.id)
+          .single()
+
+        if (orderError || !fullOrder) {
+          console.error(`❌ [Bulk Shipping Email] Could not fetch order ${order.id}:`, orderError)
+          results.push({
+            orderId: order.id,
+            success: false,
+            error: 'Order not found',
+          })
+          continue
+        }
+
+        // Check if tracking number exists
+        if (!fullOrder.tracking_number) {
+          console.error(`❌ [Bulk Shipping Email] Order ${order.id} has no tracking number`)
+          results.push({
+            orderId: order.id,
+            success: false,
+            error: 'No tracking number',
+          })
+          continue
+        }
+
+        // Get user details
+        const { data: userData } = await supabaseAdmin
+          .from('profiles')
+          .select('full_name')
+          .eq('id', fullOrder.user_id)
+          .single()
+
+        // Get user email
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(fullOrder.user_id)
+        
+        if (!authUser?.user?.email) {
+          console.error(`❌ [Bulk Shipping Email] User email not found for order ${order.id}`)
+          results.push({
+            orderId: order.id,
+            success: false,
+            error: 'User email not found',
+          })
+          continue
+        }
+
+        const customerEmail = authUser.user.email
+        const customerName = userData?.full_name || customerEmail
+
+        // Calculate dates
+        const shippedDate = fullOrder.shipped_at ? new Date(fullOrder.shipped_at) : new Date()
+        const estimatedDeliveryDate = fullOrder.estimated_delivery_date 
+          ? new Date(fullOrder.estimated_delivery_date)
+          : new Date(shippedDate.getTime() + 5 * 24 * 60 * 60 * 1000)
+
+        console.log(`📧 [Bulk Shipping Email] Sending to ${customerEmail}`)
+
+        // Send shipping notification
+        const result = await sendShippingNotificationEmail({
+          orderNumber: fullOrder.id.substring(0, 8).toUpperCase(),
+          customerName,
+          customerEmail,
+          trackingNumber: fullOrder.tracking_number,
+          estimatedDelivery: estimatedDeliveryDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          shippedDate: shippedDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
         })
 
-        const result = await response.json()
-
-        if (response.ok) {
+        if (result.success) {
           console.log(`✅ [Bulk Shipping Email] Email sent for order: ${order.id}`)
           results.push({
             orderId: order.id,
