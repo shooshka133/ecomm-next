@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { signInWithGoogle } from '@/lib/auth/google'
@@ -20,47 +20,73 @@ export default function AuthPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createSupabaseClient()
+  const retryInitiatedRef = useRef(false) // Prevent duplicate retries
 
   // Auto-retry OAuth if PKCE error occurred (incognito mode fix)
   // Completely silent - no error message shown, just automatically retry
+  // Only retries once - prevents double processing
   useEffect(() => {
     const oauthRetry = searchParams.get('oauth_retry')
     const provider = searchParams.get('provider')
     const next = searchParams.get('next') || '/'
     
-    if (oauthRetry === 'true' && provider === 'google') {
-      console.log('🔄 [Auth] Auto-retrying Google OAuth due to PKCE error (incognito mode) - silent retry')
-      setGoogleLoading(true)
-      // Don't show any error message - make it completely seamless
+    // Only retry if flag is set, we haven't already initiated retry, and not already loading
+    if (oauthRetry === 'true' && provider === 'google' && !googleLoading && !retryInitiatedRef.current) {
+      // Mark retry as initiated to prevent duplicate processing
+      retryInitiatedRef.current = true
       
-      // Small delay to ensure component is fully mounted and state is ready
-      const retryTimer = setTimeout(() => {
-        // Automatically trigger Google OAuth with fresh state
-        signInWithGoogle({
-          redirectTo: next,
-          onError: (error) => {
-            // Only show error if retry also fails
-            console.error('❌ [Auth] Auto-retry OAuth failed:', error)
+      // Check if user is already authenticated (prevent unnecessary retry)
+      const checkAuth = async () => {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          // User is already authenticated - no need to retry
+          console.log('✅ [Auth] User already authenticated, skipping auto-retry')
+          router.replace(next)
+          router.refresh()
+          return
+        }
+        
+        // User not authenticated - proceed with retry
+        console.log('🔄 [Auth] Auto-retrying Google OAuth due to PKCE error (incognito mode) - silent retry')
+        setGoogleLoading(true)
+        
+        // Small delay to ensure component is fully mounted and state is ready
+        const retryTimer = setTimeout(() => {
+          // Automatically trigger Google OAuth with fresh state
+          signInWithGoogle({
+            redirectTo: next,
+            onError: (error) => {
+              // Only show error if retry also fails
+              console.error('❌ [Auth] Auto-retry OAuth failed:', error)
+              setMessageType('error')
+              setMessage('Sign-in failed. Please try again.')
+              setGoogleLoading(false)
+              retryInitiatedRef.current = false // Reset on error to allow manual retry
+            },
+            onSuccess: () => {
+              console.log('✅ [Auth] Auto-retry OAuth initiated successfully - redirecting...')
+              // Loading state will be maintained until redirect happens
+            },
+          }).catch((err) => {
+            console.error('❌ [Auth] Auto-retry OAuth exception:', err)
             setMessageType('error')
             setMessage('Sign-in failed. Please try again.')
             setGoogleLoading(false)
-          },
-          onSuccess: () => {
-            console.log('✅ [Auth] Auto-retry OAuth initiated successfully - redirecting...')
-            // Loading state will be maintained until redirect happens
-            // User will see loading spinner, then redirect to Google
-          },
-        }).catch((err) => {
-          console.error('❌ [Auth] Auto-retry OAuth exception:', err)
-          setMessageType('error')
-          setMessage('Sign-in failed. Please try again.')
-          setGoogleLoading(false)
-        })
-      }, 300) // Small delay to ensure state is set
+            retryInitiatedRef.current = false // Reset on error to allow manual retry
+          })
+        }, 300) // Small delay to ensure state is set
+        
+        return () => clearTimeout(retryTimer)
+      }
       
-      return () => clearTimeout(retryTimer)
+      checkAuth()
     }
-  }, [searchParams])
+    
+    // Reset ref when oauth_retry param is removed (new OAuth flow started)
+    if (!searchParams.get('oauth_retry')) {
+      retryInitiatedRef.current = false
+    }
+  }, [searchParams, googleLoading, supabase, router])
 
   // Check for error from callback
   // Don't show errors during auto-retry (incognito mode fix)
