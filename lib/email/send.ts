@@ -2,6 +2,7 @@ import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import OrderConfirmationEmail from './templates/OrderConfirmation'
 import ShippingNotificationEmail from './templates/ShippingNotification'
+import DeliveryNotificationEmail from './templates/DeliveryNotification'
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -32,6 +33,21 @@ export interface ShippingEmailData {
   trackingNumber: string
   estimatedDelivery?: string
   shippedDate: string
+}
+
+export interface DeliveryEmailData {
+  orderNumber: string
+  customerName: string
+  customerEmail: string
+  trackingNumber: string
+  deliveredDate: string
+  orderItems: Array<{
+    name: string
+    price: number
+    quantity: number
+    image_url?: string
+  }>
+  total: number
 }
 
 /**
@@ -122,50 +138,45 @@ export async function sendShippingNotificationEmail(data: ShippingEmailData) {
 }
 
 /**
- * Send delivery confirmation email (optional)
+ * Send delivery notification email
  */
-export async function sendDeliveryConfirmationEmail(data: {
-  orderNumber: string
-  customerName: string
-  customerEmail: string
-  deliveredDate: string
-}) {
+export async function sendDeliveryNotificationEmail(data: DeliveryEmailData) {
   try {
+    console.log('🔍 [Email] Starting sendDeliveryNotificationEmail...')
+    console.log('🔍 [Email] TO_EMAIL:', data.customerEmail)
+    
     if (!process.env.RESEND_API_KEY) {
       console.warn('⚠️  RESEND_API_KEY not set. Skipping email send.')
       return { success: false, error: 'API key not configured' }
     }
 
-    console.log(`📧 Sending delivery confirmation email to ${data.customerEmail}`)
+    console.log(`📧 Sending delivery notification email to ${data.customerEmail}`)
+
+    // Render React email component to HTML
+    console.log('🔍 [Email] Rendering delivery email template...')
+    const emailHtml = await render(DeliveryNotificationEmail(data), {
+      pretty: false,
+    })
+    console.log('✅ [Email] Template rendered successfully')
 
     const { data: emailData, error } = await resend.emails.send({
       from: `Ecommerce Start <${FROM_EMAIL}>`,
       to: [data.customerEmail],
       subject: `Your Order #${data.orderNumber} Has Been Delivered! 🎉`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #4F46E5; text-align: center;">🎉 Delivered!</h1>
-          <p>Hi ${data.customerName},</p>
-          <p>Great news! Your order <strong>#${data.orderNumber}</strong> has been successfully delivered on ${data.deliveredDate}.</p>
-          <p>We hope you love your purchase! If you have any questions or concerns, please don't hesitate to reach out.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${process.env.NEXT_PUBLIC_APP_URL}/orders" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">View Order</a>
-          </div>
-          <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 30px 0;" />
-          <p style="text-align: center; color: #6B7280; font-size: 12px;">© ${new Date().getFullYear()} Ecommerce Start. All rights reserved.</p>
-        </div>
-      `,
+      html: String(emailHtml),
     })
 
     if (error) {
-      console.error('❌ Failed to send delivery confirmation email:', error)
+      console.error('❌ Failed to send delivery notification email:', error)
+      console.error('❌ Error details:', JSON.stringify(error, null, 2))
       return { success: false, error: error.message }
     }
 
-    console.log(`✅ Delivery confirmation email sent successfully! ID: ${emailData?.id}`)
+    console.log(`✅ Delivery notification email sent successfully! ID: ${emailData?.id}`)
     return { success: true, emailId: emailData?.id }
   } catch (error: any) {
-    console.error('❌ Error sending delivery confirmation email:', error)
+    console.error('❌ Error sending delivery notification email:', error)
+    console.error('❌ Error stack:', error.stack)
     return { success: false, error: error.message }
   }
 }
