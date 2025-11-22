@@ -61,7 +61,7 @@ export default function OrderConfirmationEmail({
           <Section style={section}>
             <Text style={text}>Hi {customerName},</Text>
             <Text style={text}>
-              We've received your order and are processing it now. You'll receive another email when your order ships.
+              We&apos;ve received your order and are processing it now. You&apos;ll receive another email when your order ships.
             </Text>
           </Section>
 
