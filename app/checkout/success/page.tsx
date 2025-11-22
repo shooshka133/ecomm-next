@@ -72,21 +72,16 @@ export default function CheckoutSuccessPage() {
             window.dispatchEvent(new Event('cartUpdated'))
           }
           
-          // Check if order was created recently (within last 2 minutes)
-          // If yes, assume webhook sent email. If older, send as fallback.
-          const orderCreatedAt = new Date(existingOrder.created_at)
-          const now = new Date()
-          const minutesSinceCreation = (now.getTime() - orderCreatedAt.getTime()) / (1000 * 60)
-          
-          // Check localStorage to prevent duplicates on refresh
+          // Always try to send email as fallback (webhook might not have fired)
+          // Use localStorage to prevent duplicates on refresh
           const emailSentKey = `order_email_sent_${existingOrder.id}`
           const emailAlreadySent = typeof window !== 'undefined' && localStorage.getItem(emailSentKey) === 'true'
           
-          // Only send email if:
-          // 1. Order is older than 2 minutes (webhook might have failed)
-          // 2. AND email hasn't been sent yet (localStorage check)
-          if (minutesSinceCreation > 2 && !emailAlreadySent) {
-            console.log('📧 Order is older than 2 minutes, sending email as fallback...')
+          if (!emailAlreadySent) {
+            console.log('📧 Sending confirmation email as fallback (webhook may not have fired)...')
+            
+            // Wait a moment to ensure order is fully committed
+            await new Promise(resolve => setTimeout(resolve, 2000))
             
             try {
               const response = await fetch('/api/send-order-email', {
@@ -106,7 +101,7 @@ export default function CheckoutSuccessPage() {
                 console.log('📧 Email API response:', result)
                 
                 if (result.success) {
-                  console.log('✅ Fallback email sent successfully!')
+                  console.log('✅ Confirmation email sent successfully!')
                   if (typeof window !== 'undefined') {
                     localStorage.setItem(emailSentKey, 'true')
                   }
@@ -115,12 +110,10 @@ export default function CheckoutSuccessPage() {
                 }
               }
             } catch (emailError) {
-              console.error('❌ Failed to send fallback email (exception):', emailError)
+              console.error('❌ Failed to send email (exception):', emailError)
             }
-          } else if (emailAlreadySent) {
-            console.log('📧 Email already sent for this order (localStorage), skipping to prevent duplicate')
           } else {
-            console.log('📧 Order was created recently (likely by webhook), assuming email was sent by webhook')
+            console.log('📧 Email already sent for this order (localStorage), skipping to prevent duplicate')
           }
           
           setProcessing(false)
