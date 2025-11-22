@@ -55,6 +55,7 @@ export default function CheckoutSuccessPage() {
           console.log('📦 Order ID:', existingOrder.id)
           console.log('👤 Order User ID:', existingOrder.user_id)
           console.log('💳 Stripe Payment Intent:', existingOrder.stripe_payment_intent_id)
+          console.log('📅 Order Created At:', existingOrder.created_at)
           
           // Order exists, just clear cart if needed and update count
           const { data: cartItems } = await supabase
@@ -71,18 +72,23 @@ export default function CheckoutSuccessPage() {
             window.dispatchEvent(new Event('cartUpdated'))
           }
           
-          // Check if email was already sent for this order (prevent duplicates on refresh)
+          // Check if order was created recently (within last 2 minutes)
+          // If yes, assume webhook sent email. If older, send as fallback.
+          const orderCreatedAt = new Date(existingOrder.created_at)
+          const now = new Date()
+          const minutesSinceCreation = (now.getTime() - orderCreatedAt.getTime()) / (1000 * 60)
+          
+          // Check localStorage to prevent duplicates on refresh
           const emailSentKey = `order_email_sent_${existingOrder.id}`
           const emailAlreadySent = typeof window !== 'undefined' && localStorage.getItem(emailSentKey) === 'true'
           
-          if (!emailAlreadySent) {
-            // Send email for existing order (in case webhook didn't send it)
-            // Wait a moment to ensure order is fully committed to database
-            await new Promise(resolve => setTimeout(resolve, 1000))
+          // Only send email if:
+          // 1. Order is older than 2 minutes (webhook might have failed)
+          // 2. AND email hasn't been sent yet (localStorage check)
+          if (minutesSinceCreation > 2 && !emailAlreadySent) {
+            console.log('📧 Order is older than 2 minutes, sending email as fallback...')
             
             try {
-              console.log('📧 Attempting to send email for order:', existingOrder.id)
-              
               const response = await fetch('/api/send-order-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -100,8 +106,7 @@ export default function CheckoutSuccessPage() {
                 console.log('📧 Email API response:', result)
                 
                 if (result.success) {
-                  console.log('✅ Email sent successfully!')
-                  // Mark email as sent to prevent duplicates on refresh
+                  console.log('✅ Fallback email sent successfully!')
                   if (typeof window !== 'undefined') {
                     localStorage.setItem(emailSentKey, 'true')
                   }
@@ -110,10 +115,12 @@ export default function CheckoutSuccessPage() {
                 }
               }
             } catch (emailError) {
-              console.error('❌ Failed to send email (exception):', emailError)
+              console.error('❌ Failed to send fallback email (exception):', emailError)
             }
+          } else if (emailAlreadySent) {
+            console.log('📧 Email already sent for this order (localStorage), skipping to prevent duplicate')
           } else {
-            console.log('📧 Email already sent for this order, skipping to prevent duplicate')
+            console.log('📧 Order was created recently (likely by webhook), assuming email was sent by webhook')
           }
           
           setProcessing(false)
@@ -242,13 +249,15 @@ export default function CheckoutSuccessPage() {
               
               console.log('Order created manually:', order.id)
               
-              // Send order confirmation email (only if not already sent)
+              // Send order confirmation email (webhook didn't fire, so we must send it)
+              // Check localStorage to prevent duplicates on refresh
               const emailSentKey = `order_email_sent_${order.id}`
               const emailAlreadySent = typeof window !== 'undefined' && localStorage.getItem(emailSentKey) === 'true'
               
               if (!emailAlreadySent) {
+                console.log('📧 Sending email for manually created order...')
                 try {
-                  await fetch('/api/send-order-email', {
+                  const response = await fetch('/api/send-order-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -256,16 +265,27 @@ export default function CheckoutSuccessPage() {
                       userId: user.id,
                     }),
                   })
-                  console.log('📧 Email sent for new order')
-                  // Mark email as sent to prevent duplicates on refresh
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem(emailSentKey, 'true')
+                  
+                  if (!response.ok) {
+                    const errorText = await response.text()
+                    console.error('❌ Email API HTTP error:', response.status, errorText)
+                  } else {
+                    const result = await response.json()
+                    if (result.success) {
+                      console.log('✅ Email sent successfully for manually created order!')
+                      // Mark email as sent to prevent duplicates on refresh
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem(emailSentKey, 'true')
+                      }
+                    } else {
+                      console.error('❌ Email API returned error:', result.error)
+                    }
                   }
                 } catch (emailError) {
-                  console.error('Failed to send email:', emailError)
+                  console.error('❌ Failed to send email (exception):', emailError)
                 }
               } else {
-                console.log('📧 Email already sent for this order, skipping to prevent duplicate')
+                console.log('📧 Email already sent for this order (localStorage), skipping to prevent duplicate')
               }
               
               // Dispatch event to update cart count
