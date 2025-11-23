@@ -36,6 +36,10 @@ export interface Order {
   updated_at?: string
   order_items?: OrderItem[]
   shipping_address?: UserAddress
+  // Email tracking flags (added in idempotency migration)
+  confirmation_email_sent?: boolean
+  shipping_email_sent?: boolean
+  delivery_email_sent?: boolean
 }
 
 export interface OrderItem {
