@@ -86,7 +86,11 @@ export async function POST(request: NextRequest) {
       : new Date(shippedDate.getTime() + 5 * 24 * 60 * 60 * 1000) // 5 days
 
     // Get order URL (fallback to production URL)
-    const orderUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+    // If localhost is detected, use production URL instead
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+    const orderUrl = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')
+      ? 'https://store.shooshka.online'
+      : baseUrl
 
     // Send shipping notification
     const result = await sendShippingNotificationEmail({
