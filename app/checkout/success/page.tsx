@@ -89,6 +89,13 @@ export default function CheckoutSuccessPage() {
           if (secondsSinceCreation < 10 && !emailAlreadySent) {
             console.log('📧 Order created very recently, sending email as fallback (webhook may not have fired yet)...')
             
+            // Set localStorage flag IMMEDIATELY to prevent duplicate on refresh
+            // This must be done BEFORE the API call, not after
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(emailSentKey, 'true')
+              console.log('📧 localStorage flag set to prevent duplicates on refresh')
+            }
+            
             // Wait a moment to give webhook time to process
             await new Promise(resolve => setTimeout(resolve, 3000))
             
@@ -111,9 +118,6 @@ export default function CheckoutSuccessPage() {
                 
                 if (result.success) {
                   console.log('✅ Confirmation email sent successfully!')
-                  if (typeof window !== 'undefined') {
-                    localStorage.setItem(emailSentKey, 'true')
-                  }
                 } else {
                   console.error('❌ Email API returned error:', result.error)
                 }
@@ -260,6 +264,14 @@ export default function CheckoutSuccessPage() {
               
               if (!emailAlreadySent) {
                 console.log('📧 Sending email for manually created order...')
+                
+                // Set localStorage flag IMMEDIATELY to prevent duplicate on refresh
+                // This must be done BEFORE the API call, not after
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem(emailSentKey, 'true')
+                  console.log('📧 localStorage flag set to prevent duplicates on refresh')
+                }
+                
                 try {
                   const response = await fetch('/api/send-order-email', {
                     method: 'POST',
@@ -277,10 +289,6 @@ export default function CheckoutSuccessPage() {
                     const result = await response.json()
                     if (result.success) {
                       console.log('✅ Email sent successfully for manually created order!')
-                      // Mark email as sent to prevent duplicates on refresh
-                      if (typeof window !== 'undefined') {
-                        localStorage.setItem(emailSentKey, 'true')
-                      }
                     } else {
                       console.error('❌ Email API returned error:', result.error)
                     }
