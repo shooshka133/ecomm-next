@@ -72,16 +72,25 @@ export default function CheckoutSuccessPage() {
             window.dispatchEvent(new Event('cartUpdated'))
           }
           
-          // Always try to send email as fallback (webhook might not have fired)
+          // Check if order was created recently (webhook might still be processing)
+          // Only send email if order is very recent (within 10 seconds) as fallback
+          const orderCreatedAt = new Date(existingOrder.created_at)
+          const now = new Date()
+          const secondsSinceCreation = (now.getTime() - orderCreatedAt.getTime()) / 1000
+          
           // Use localStorage to prevent duplicates on refresh
           const emailSentKey = `order_email_sent_${existingOrder.id}`
           const emailAlreadySent = typeof window !== 'undefined' && localStorage.getItem(emailSentKey) === 'true'
           
-          if (!emailAlreadySent) {
-            console.log('📧 Sending confirmation email as fallback (webhook may not have fired)...')
+          // Only send email if:
+          // 1. Order was created very recently (within 10 seconds) - webhook might not have fired yet
+          // 2. AND email hasn't been sent yet (localStorage check)
+          // This prevents duplicate emails while still allowing fallback for webhook failures
+          if (secondsSinceCreation < 10 && !emailAlreadySent) {
+            console.log('📧 Order created very recently, sending email as fallback (webhook may not have fired yet)...')
             
-            // Wait a moment to ensure order is fully committed
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            // Wait a moment to give webhook time to process
+            await new Promise(resolve => setTimeout(resolve, 3000))
             
             try {
               const response = await fetch('/api/send-order-email', {
@@ -112,8 +121,10 @@ export default function CheckoutSuccessPage() {
             } catch (emailError) {
               console.error('❌ Failed to send email (exception):', emailError)
             }
-          } else {
+          } else if (emailAlreadySent) {
             console.log('📧 Email already sent for this order (localStorage), skipping to prevent duplicate')
+          } else {
+            console.log('📧 Order was created more than 10 seconds ago, assuming webhook sent the email')
           }
           
           setProcessing(false)
