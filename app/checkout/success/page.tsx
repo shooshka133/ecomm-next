@@ -142,103 +142,101 @@ export default function CheckoutSuccessPage() {
         
         // If order still not found after retries, continue to fallback creation
 
-
         // Step 3: Webhook didn't create order, create it manually (fallback)
         setProcessing({ status: 'creating', message: 'Creating order...' })
 
-          // Get cart items with product details (client-side)
-          // Even if cart is empty, the API route can fetch from Stripe session
-          const { data: cartItems } = await supabase
-            .from('cart_items')
-            .select('*, products(id, name, price, image_url)')
-            .eq('user_id', user.id)
+        // Get cart items with product details (client-side)
+        // Even if cart is empty, the API route can fetch from Stripe session
+        const { data: cartItems } = await supabase
+          .from('cart_items')
+          .select('*, products(id, name, price, image_url)')
+          .eq('user_id', user.id)
 
-          // Calculate total (if cart items exist)
-          const total = cartItems?.reduce(
-            (sum: number, item) => {
-              const price = item.products?.price || 0
-              const quantity = item.quantity || 0
-              return sum + price * quantity
-            },
-            0
-          ) || 0
+        // Calculate total (if cart items exist)
+        const total = cartItems?.reduce(
+          (sum: number, item) => {
+            const price = item.products?.price || 0
+            const quantity = item.quantity || 0
+            return sum + price * quantity
+          },
+          0
+        ) || 0
 
-          // Create order via API route (server-side, can use service role key)
-          // API route will handle empty cart by fetching from Stripe session
-          const response = await fetch('/api/create-order-fallback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user.id,
-              sessionId,
-              cartItems: cartItems?.map((item) => ({
-                product_id: item.product_id,
-                quantity: item.quantity,
-                price: item.products?.price || 0,
-              })) || [], // Send empty array if cart is empty - API will fetch from Stripe
-              total,
-            }),
+        // Create order via API route (server-side, can use service role key)
+        // API route will handle empty cart by fetching from Stripe session
+        const response = await fetch('/api/create-order-fallback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            sessionId,
+            cartItems: cartItems?.map((item) => ({
+              product_id: item.product_id,
+              quantity: item.quantity,
+              price: item.products?.price || 0,
+            })) || [], // Send empty array if cart is empty - API will fetch from Stripe
+            total,
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('[Success Page] Failed to create order:', errorData.error)
+          setProcessing({
+            status: 'error',
+            message: 'Failed to create order. Please contact support.',
           })
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-            console.error('[Success Page] Failed to create order:', errorData.error)
-            setProcessing({
-              status: 'error',
-              message: 'Failed to create order. Please contact support.',
-            })
-            return
-          }
-
-          const orderResult = await response.json()
-
-          if (!orderResult.success || !orderResult.order) {
-            console.error('[Success Page] Failed to create order:', orderResult.error)
-            setProcessing({
-              status: 'error',
-              message: 'Failed to create order. Please contact support.',
-            })
-            return
-          }
-
-          console.log('[Success Page] Order created manually:', orderResult.order.id)
-
-          // Step 4: Send order confirmation email (idempotent)
-          if (!orderResult.wasDuplicate) {
-            setProcessing({ status: 'sending_email', message: 'Sending confirmation email...' })
-
-            try {
-              const emailResponse = await fetch('/api/send-order-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  orderId: orderResult.order.id,
-                  userId: user.id,
-                }),
-              })
-
-              if (emailResponse.ok) {
-                const emailResult = await emailResponse.json()
-                if (emailResult.success) {
-                  console.log('[Success Page] Email sent:', emailResult.emailId)
-                } else {
-                  console.error('[Success Page] Email failed:', emailResult.error)
-                }
-              } else {
-                console.error('[Success Page] Email API error:', emailResponse.status)
-              }
-            } catch (emailError) {
-              console.error('[Success Page] Email exception:', emailError)
-              // Don't fail - order is created, email can be retried
-            }
-          }
-
-          // Dispatch event to update cart count
-          window.dispatchEvent(new Event('cartUpdated'))
-
-          setProcessing({ status: 'complete', message: 'Order confirmed!' })
-          router.refresh()
+          return
         }
+
+        const orderResult = await response.json()
+
+        if (!orderResult.success || !orderResult.order) {
+          console.error('[Success Page] Failed to create order:', orderResult.error)
+          setProcessing({
+            status: 'error',
+            message: 'Failed to create order. Please contact support.',
+          })
+          return
+        }
+
+        console.log('[Success Page] Order created manually:', orderResult.order.id)
+
+        // Step 4: Send order confirmation email (idempotent)
+        if (!orderResult.wasDuplicate) {
+          setProcessing({ status: 'sending_email', message: 'Sending confirmation email...' })
+
+          try {
+            const emailResponse = await fetch('/api/send-order-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: orderResult.order.id,
+                userId: user.id,
+              }),
+            })
+
+            if (emailResponse.ok) {
+              const emailResult = await emailResponse.json()
+              if (emailResult.success) {
+                console.log('[Success Page] Email sent:', emailResult.emailId)
+              } else {
+                console.error('[Success Page] Email failed:', emailResult.error)
+              }
+            } else {
+              console.error('[Success Page] Email API error:', emailResponse.status)
+            }
+          } catch (emailError) {
+            console.error('[Success Page] Email exception:', emailError)
+            // Don't fail - order is created, email can be retried
+          }
+        }
+
+        // Dispatch event to update cart count
+        window.dispatchEvent(new Event('cartUpdated'))
+
+        setProcessing({ status: 'complete', message: 'Order confirmed!' })
+        router.refresh()
       } catch (error: any) {
         console.error('[Success Page] Error processing order:', error)
         setProcessing({
