@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
-import { createOrderFromCart, getCartItemsWithProducts } from '@/lib/orders/create'
+import { createOrderFromCart, getCartItemsWithProducts, CreateOrderCartItem } from '@/lib/orders/create'
 import { sendOrderConfirmationEmailIdempotent } from '@/lib/orders/email'
 
 // Use service role key for webhook to bypass RLS
@@ -115,22 +115,100 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Get cart items with product details
     log('info', 'Fetching cart items', { correlationId, userId })
-    const cartItems = await getCartItemsWithProducts(userId)
+    let cartItems: CreateOrderCartItem[] = (await getCartItemsWithProducts(userId)) as CreateOrderCartItem[]
+
+    // If cart is empty, try to fetch from Stripe session (cart might have been cleared)
+    if (!cartItems || cartItems.length === 0) {
+      log('warn', 'No cart items found, fetching from Stripe session', { correlationId, userId, sessionId })
+      
+      try {
+        // Fetch Stripe checkout session to get line items
+        const stripeSession = await stripe.checkout.sessions.retrieve(sessionId, {
+          expand: ['line_items', 'line_items.data.price.product'],
+        })
+
+        if (stripeSession.payment_status === 'paid' && stripeSession.line_items?.data) {
+          const lineItems = stripeSession.line_items.data
+          
+          // Get product IDs from session metadata
+          const productIdsFromMetadata = stripeSession.metadata?.product_ids?.split(',') || []
+          
+          // Extract product IDs
+          const productIds: string[] = []
+          lineItems.forEach((lineItem: any, index: number) => {
+            const productId = 
+              lineItem.price?.product?.metadata?.product_id || 
+              productIdsFromMetadata[index] ||
+              null
+            if (productId && !productId.startsWith('stripe-')) productIds.push(productId)
+          })
+          
+          // Fetch products from database
+          if (productIds.length > 0) {
+            const { data: products } = await supabaseAdmin
+              .from('products')
+              .select('id, name, price, image_url')
+              .in('id', productIds)
+            
+            // Reconstruct cart items from Stripe data
+            cartItems = lineItems.map((lineItem: any, index: number): CreateOrderCartItem => {
+              const productId = 
+                lineItem.price?.product?.metadata?.product_id || 
+                productIdsFromMetadata[index]
+              const product = products?.find((p) => p.id === productId)
+              
+              return {
+                id: `webhook-${lineItem.id}`,
+                user_id: userId,
+                product_id: productId || product?.id || `stripe-${lineItem.id}`,
+                quantity: lineItem.quantity || 1,
+                products: product ? {
+                  price: Number(product.price) || (lineItem.price?.unit_amount || 0) / 100,
+                  name: product.name || 'Product',
+                  image_url: product.image_url,
+                } : {
+                  price: (lineItem.price?.unit_amount || 0) / 100,
+                  name: lineItem.description || 'Product',
+                  image_url: undefined,
+                },
+              }
+            })
+            
+            log('info', 'Reconstructed cart items from Stripe', { 
+              correlationId, 
+              itemCount: cartItems.length,
+              productIdsFound: productIds.length,
+            })
+          }
+        }
+      } catch (stripeError: any) {
+        log('error', 'Failed to fetch Stripe session', { 
+          correlationId, 
+          error: stripeError.message,
+          sessionId,
+        })
+      }
+    }
 
     if (!cartItems || cartItems.length === 0) {
-      log('warn', 'No cart items found', { correlationId, userId })
+      log('error', 'No cart items found and unable to fetch from Stripe', { correlationId, userId, sessionId })
       
-      // Mark event as processed even if no cart items (prevents retries)
-      await supabaseAdmin.rpc('mark_webhook_event_processed', {
-        p_stripe_event_id: event.id,
-        p_event_type: event.type,
-        p_order_id: null,
-        p_metadata: { reason: 'no_cart_items' },
-      })
+      // Mark event as processed to prevent retries
+      try {
+        await supabaseAdmin
+          .from('processed_webhook_events')
+          .insert({ 
+            stripe_event_id: event.id,
+            event_type: event.type,
+            processed_at: new Date().toISOString(),
+          })
+      } catch (err) {
+        // Ignore errors if table doesn't exist
+      }
 
       return NextResponse.json({
         received: true,
-        warning: 'No cart items found',
+        warning: 'No cart items found and unable to reconstruct from Stripe',
       })
     }
 

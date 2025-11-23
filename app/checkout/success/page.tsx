@@ -98,9 +98,9 @@ export default function CheckoutSuccessPage() {
         }
 
         // Step 2: Wait for webhook with exponential backoff
-        // Instead of fixed 3 seconds, use retry logic
-        const maxRetries = 5
-        const baseDelay = 1000 // 1 second
+        // Reduced retries and delays for faster fallback
+        const maxRetries = 3 // Reduced from 5 to 3
+        const baseDelay = 500 // Reduced from 1000ms to 500ms
         let orderFound = false
 
         for (let attempt = 0; attempt < maxRetries; attempt++) {
