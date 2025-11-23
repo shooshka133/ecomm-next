@@ -90,6 +90,9 @@ export async function POST(request: NextRequest) {
           currency: 'usd',
           product_data: {
             name: `Product ${item.product_id}`,
+            metadata: {
+              product_id: item.product_id, // Store product_id in product metadata
+            },
           },
           unit_amount: Math.round(item.price * 100),
         },
@@ -101,6 +104,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         user_id: user.id,
         address_id: address_id || '',
+        product_ids: items.map((item: any) => item.product_id).join(','), // Store all product IDs
       },
       shipping_address_collection: shippingAddress ? undefined : {
         allowed_countries: ['US', 'CA', 'GB', 'AU'],

@@ -150,40 +150,31 @@ export default function CheckoutSuccessPage() {
           setProcessing({ status: 'creating', message: 'Creating order...' })
 
           // Get cart items with product details (client-side)
-          const { data: cartItems, error: cartError } = await supabase
+          // Even if cart is empty, the API route can fetch from Stripe session
+          const { data: cartItems } = await supabase
             .from('cart_items')
             .select('*, products(id, name, price, image_url)')
             .eq('user_id', user.id)
 
-          if (cartError || !cartItems || cartItems.length === 0) {
-            // Cart is empty - order might have been created but cart already cleared
-            // Or this is a page refresh after order was processed
-            console.warn('[Success Page] Cart is empty but no order exists')
-            setProcessing({
-              status: 'error',
-              message: 'Unable to process order. Please contact support.',
-            })
-            return
-          }
-
-          // Calculate total
-          const total = cartItems.reduce(
+          // Calculate total (if cart items exist)
+          const total = cartItems?.reduce(
             (sum: number, item: any) => sum + (item.products?.price || 0) * item.quantity,
             0
-          )
+          ) || 0
 
           // Create order via API route (server-side, can use service role key)
+          // API route will handle empty cart by fetching from Stripe session
           const response = await fetch('/api/create-order-fallback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId: user.id,
               sessionId,
-              cartItems: cartItems.map((item: any) => ({
+              cartItems: cartItems?.map((item: any) => ({
                 product_id: item.product_id,
                 quantity: item.quantity,
                 price: item.products?.price || 0,
-              })),
+              })) || [], // Send empty array if cart is empty - API will fetch from Stripe
               total,
             }),
           })
