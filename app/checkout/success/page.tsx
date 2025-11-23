@@ -77,7 +77,8 @@ export default function CheckoutSuccessPage() {
         }
 
         if (existingOrder) {
-          console.log('[Success Page] Order already exists:', existingOrder.id)
+          // Webhook already created the order, so DO NOT send any fallback email
+          console.log("📧 Order exists — webhook handled email. Skipping fallback.")
           
           // Order exists, ensure cart is cleared
           const { data: cartItems } = await supabase
@@ -118,7 +119,8 @@ export default function CheckoutSuccessPage() {
           
           if (orderAfterWait) {
             orderFound = true
-            console.log('[Success Page] Order created by webhook:', orderAfterWait.id)
+            // Webhook already created the order, so DO NOT send any fallback email
+            console.log("📧 Order exists — webhook handled email. Skipping fallback.")
             
             // Ensure cart is cleared
             const { data: cartItems } = await supabase
@@ -203,7 +205,10 @@ export default function CheckoutSuccessPage() {
         console.log('[Success Page] Order created manually:', orderResult.order.id)
 
         // Step 4: Send order confirmation email (idempotent)
-        if (!orderResult.wasDuplicate) {
+        if (orderResult.wasDuplicate) {
+          // Webhook already created the order, so DO NOT send any fallback email
+          console.log("📧 Order exists — webhook handled email. Skipping fallback.")
+        } else {
           setProcessing({ status: 'sending_email', message: 'Sending confirmation email...' })
 
           try {
