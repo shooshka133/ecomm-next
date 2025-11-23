@@ -26,18 +26,25 @@ export async function POST(request: NextRequest) {
       .select('id, name, price, image_url')
       .in('id', productIds)
 
-    // Map products to cart items
-    const cartItemsWithProducts = cartItems.map((item: any) => ({
-      id: `temp-${item.product_id}`,
-      user_id: userId,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      products: products?.find((p) => p.id === item.product_id) || {
-        price: item.price,
-        name: 'Product',
-        image_url: undefined,
-      },
-    }))
+    // Map products to cart items with correct type
+    const cartItemsWithProducts = cartItems.map((item: any) => {
+      const product = products?.find((p) => p.id === item.product_id)
+      return {
+        id: `temp-${item.product_id}`,
+        user_id: userId,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        products: product ? {
+          price: Number(product.price) || Number(item.price) || 0,
+          name: product.name || 'Product',
+          image_url: product.image_url || undefined,
+        } : {
+          price: Number(item.price) || 0,
+          name: 'Product',
+          image_url: undefined,
+        },
+      }
+    })
 
     // Create order using shared utility
     const orderResult = await createOrderFromCart({

@@ -21,10 +21,18 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+export interface CreateOrderCartItem {
+  id?: string
+  user_id: string
+  product_id: string
+  quantity: number
+  products?: { price: number; name: string; image_url?: string }
+}
+
 export interface CreateOrderParams {
   userId: string
   sessionId: string
-  cartItems: Array<CartItem & { products?: { price: number; name: string; image_url?: string } }>
+  cartItems: Array<CreateOrderCartItem>
 }
 
 export interface CreateOrderResult {
