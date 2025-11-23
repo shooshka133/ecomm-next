@@ -72,64 +72,9 @@ export default function CheckoutSuccessPage() {
             window.dispatchEvent(new Event('cartUpdated'))
           }
           
-          // Check if order was created recently (webhook might still be processing)
-          // Only send email if order is very recent (within 10 seconds) as fallback
-          const orderCreatedAt = new Date(existingOrder.created_at)
-          const now = new Date()
-          const secondsSinceCreation = (now.getTime() - orderCreatedAt.getTime()) / 1000
-          
-          // Use localStorage to prevent duplicates on refresh
-          const emailSentKey = `order_email_sent_${existingOrder.id}`
-          const emailAlreadySent = typeof window !== 'undefined' && localStorage.getItem(emailSentKey) === 'true'
-          
-          // Only send email if:
-          // 1. Order was created very recently (within 10 seconds) - webhook might not have fired yet
-          // 2. AND email hasn't been sent yet (localStorage check)
-          // This prevents duplicate emails while still allowing fallback for webhook failures
-          if (secondsSinceCreation < 10 && !emailAlreadySent) {
-            console.log('📧 Order created very recently, sending email as fallback (webhook may not have fired yet)...')
-            
-            // Set localStorage flag IMMEDIATELY to prevent duplicate on refresh
-            // This must be done BEFORE the API call, not after
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(emailSentKey, 'true')
-              console.log('📧 localStorage flag set to prevent duplicates on refresh')
-            }
-            
-            // Wait a moment to give webhook time to process
-            await new Promise(resolve => setTimeout(resolve, 3000))
-            
-            try {
-              const response = await fetch('/api/send-order-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  orderId: existingOrder.id,
-                  userId: user.id,
-                }),
-              })
-              
-              if (!response.ok) {
-                const errorText = await response.text()
-                console.error('❌ Email API HTTP error:', response.status, errorText)
-              } else {
-                const result = await response.json()
-                console.log('📧 Email API response:', result)
-                
-                if (result.success) {
-                  console.log('✅ Confirmation email sent successfully!')
-                } else {
-                  console.error('❌ Email API returned error:', result.error)
-                }
-              }
-            } catch (emailError) {
-              console.error('❌ Failed to send email (exception):', emailError)
-            }
-          } else if (emailAlreadySent) {
-            console.log('📧 Email already sent for this order (localStorage), skipping to prevent duplicate')
-          } else {
-            console.log('📧 Order was created more than 10 seconds ago, assuming webhook sent the email')
-          }
+          // Webhook already created the order, so DO NOT send any fallback email
+          // The webhook handles email sending automatically
+          console.log('📧 Order exists — webhook handled email. Skipping fallback.')
           
           setProcessing(false)
           setLoading(false)
