@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { Order, OrderItem } from "@/types";
@@ -21,6 +21,7 @@ import OrderTracking from "@/components/OrderTracking";
 export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<
     (Order & { order_items?: OrderItem[] })[]
   >([]);
@@ -38,6 +39,23 @@ export default function OrdersPage() {
       loadOrders();
     }
   }, [user, authLoading, router]);
+
+  // Auto-expand order if orderId is in URL
+  useEffect(() => {
+    if (orders.length > 0 && !loading) {
+      const orderIdFromUrl = searchParams.get('orderId');
+      if (orderIdFromUrl && orders.some(order => order.id === orderIdFromUrl)) {
+        setExpandedOrder(orderIdFromUrl);
+        // Scroll to the order after a short delay to ensure it's rendered
+        setTimeout(() => {
+          const element = document.getElementById(`order-${orderIdFromUrl}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+      }
+    }
+  }, [orders, loading, searchParams]);
 
   const loadOrders = async () => {
     if (!user) return;
@@ -170,6 +188,7 @@ export default function OrdersPage() {
           {orders.map((order) => (
             <div
               key={order.id}
+              id={`order-${order.id}`}
               className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300"
             >
               {/* Order Header */}

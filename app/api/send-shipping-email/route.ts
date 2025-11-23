@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
         day: 'numeric',
       }),
       orderUrl,
+      orderId: order.id, // Pass orderId to link directly to this order
     })
 
     if (result.success) {

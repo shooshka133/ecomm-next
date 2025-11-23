@@ -35,6 +35,7 @@ export interface ShippingEmailData {
   estimatedDelivery?: string
   shippedDate: string
   orderUrl?: string
+  orderId?: string
 }
 
 export interface DeliveryEmailData {

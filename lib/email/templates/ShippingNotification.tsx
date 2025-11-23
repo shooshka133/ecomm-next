@@ -18,6 +18,7 @@ interface ShippingNotificationEmailProps {
   estimatedDelivery?: string
   shippedDate: string
   orderUrl?: string
+  orderId?: string
 }
 
 export default function ShippingNotificationEmail({
@@ -27,9 +28,12 @@ export default function ShippingNotificationEmail({
   estimatedDelivery,
   shippedDate = new Date().toLocaleDateString(),
   orderUrl,
+  orderId,
 }: ShippingNotificationEmailProps) {
   // Use provided orderUrl or fallback to production URL with /orders path
-  const orderPageUrl = orderUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'}/orders`
+  // If orderId is provided, add it as a query parameter to auto-expand the order
+  const baseUrl = orderUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'}/orders`
+  const orderPageUrl = orderId ? `${baseUrl}?orderId=${orderId}` : baseUrl
   return (
     <Html>
       <Head />
