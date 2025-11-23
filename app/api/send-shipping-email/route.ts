@@ -85,6 +85,9 @@ export async function POST(request: NextRequest) {
       ? new Date(order.estimated_delivery_date)
       : new Date(shippedDate.getTime() + 5 * 24 * 60 * 60 * 1000) // 5 days
 
+    // Get order URL (fallback to production URL)
+    const orderUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+
     // Send shipping notification
     const result = await sendShippingNotificationEmail({
       orderNumber: order.id.substring(0, 8).toUpperCase(),
@@ -101,6 +104,7 @@ export async function POST(request: NextRequest) {
         month: 'long',
         day: 'numeric',
       }),
+      orderUrl,
     })
 
     if (result.success) {

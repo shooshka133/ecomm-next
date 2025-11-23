@@ -34,6 +34,7 @@ export interface ShippingEmailData {
   trackingNumber: string
   estimatedDelivery?: string
   shippedDate: string
+  orderUrl?: string
 }
 
 export interface DeliveryEmailData {
@@ -129,8 +130,14 @@ export async function sendShippingNotificationEmail(data: ShippingEmailData) {
 
     console.log(`📧 Sending shipping notification email to ${data.customerEmail}`)
 
+    // Ensure orderUrl is set (fallback to production URL)
+    const orderUrl = data.orderUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+
     // Render React email component to HTML
-    const emailHtml = await render(React.createElement(ShippingNotificationEmail, data))
+    const emailHtml = await render(React.createElement(ShippingNotificationEmail, {
+      ...data,
+      orderUrl,
+    }))
 
     const { data: emailData, error } = await resend.emails.send({
       from: `Ecommerce Start <${FROM_EMAIL}>`,

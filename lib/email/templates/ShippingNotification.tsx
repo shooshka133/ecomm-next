@@ -17,6 +17,7 @@ interface ShippingNotificationEmailProps {
   trackingNumber: string
   estimatedDelivery?: string
   shippedDate: string
+  orderUrl?: string
 }
 
 export default function ShippingNotificationEmail({
@@ -25,7 +26,10 @@ export default function ShippingNotificationEmail({
   trackingNumber = 'TRK-20251121-10001',
   estimatedDelivery,
   shippedDate = new Date().toLocaleDateString(),
+  orderUrl,
 }: ShippingNotificationEmailProps) {
+  // Use provided orderUrl or fallback to production URL with /orders path
+  const orderPageUrl = orderUrl || `${process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'}/orders`
   return (
     <Html>
       <Head />
@@ -70,7 +74,7 @@ export default function ShippingNotificationEmail({
             <Text style={text}>
               You can track your package status anytime by visiting your orders page.
             </Text>
-            <Button style={button} href={`${process.env.NEXT_PUBLIC_APP_URL}/orders`}>
+            <Button style={button} href={orderPageUrl}>
               View Order Details
             </Button>
           </Section>
