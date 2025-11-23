@@ -86,9 +86,11 @@ export async function POST(request: NextRequest) {
       : new Date(shippedDate.getTime() + 5 * 24 * 60 * 60 * 1000) // 5 days
 
     // Get order URL (fallback to production URL)
-    // If localhost is detected, use production URL instead
+    // In production, always use production URL (even if localhost is detected)
+    // In development, keep localhost for local testing
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
-    const orderUrl = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')
+    const isProduction = process.env.NODE_ENV === 'production'
+    const orderUrl = (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && isProduction
       ? 'https://store.shooshka.online'
       : baseUrl
 

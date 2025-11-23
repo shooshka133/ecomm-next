@@ -131,9 +131,11 @@ export async function sendShippingNotificationEmail(data: ShippingEmailData) {
     console.log(`📧 Sending shipping notification email to ${data.customerEmail}`)
 
     // Ensure orderUrl is set (fallback to production URL)
-    // If localhost is detected, use production URL instead
+    // In production, always use production URL (even if localhost is detected)
+    // In development, keep localhost for local testing
     const baseUrl = data.orderUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
-    const orderUrl = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') 
+    const isProduction = process.env.NODE_ENV === 'production'
+    const orderUrl = (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && isProduction
       ? 'https://store.shooshka.online' 
       : baseUrl
 
