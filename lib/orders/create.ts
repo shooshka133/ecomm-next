@@ -45,15 +45,15 @@ export interface CreateOrderResult {
 /**
  * Creates an order from cart items with full transaction support
  * 
- * This function:
- * 1. Checks if order already exists (idempotency)
- * 2. Calculates total from cart items
- * 3. Creates order in a transaction
- * 4. Creates order items
- * 5. Clears cart
- * 6. Removes purchased items from wishlist
+ * This function uses a PostgreSQL transaction function to ensure atomicity.
+ * All operations (order, order_items, cart clearing, wishlist removal) 
+ * happen in a single transaction - if any step fails, everything rolls back.
  * 
- * All operations are atomic - if any step fails, everything rolls back.
+ * This function:
+ * 1. Validates cart items
+ * 2. Calculates total from cart items
+ * 3. Calls PostgreSQL function that handles everything atomically
+ * 4. Returns the created order or existing order (idempotent)
  */
 export async function createOrderFromCart(
   params: CreateOrderParams
@@ -61,22 +61,7 @@ export async function createOrderFromCart(
   const { userId, sessionId, cartItems } = params
 
   try {
-    // Step 1: Check for existing order (idempotency)
-    const { data: existingOrder } = await supabaseAdmin
-      .from('orders')
-      .select('id, user_id, total, status, created_at')
-      .eq('stripe_payment_intent_id', sessionId)
-      .maybeSingle()
-
-    if (existingOrder) {
-      return {
-        success: true,
-        order: existingOrder as Order,
-        wasDuplicate: true,
-      }
-    }
-
-    // Step 2: Validate cart items
+    // Step 1: Validate cart items
     if (!cartItems || cartItems.length === 0) {
       return {
         success: false,
@@ -84,7 +69,7 @@ export async function createOrderFromCart(
       }
     }
 
-    // Step 3: Calculate total
+    // Step 2: Calculate total
     const total = cartItems.reduce(
       (sum, item) => sum + (item.products?.price || 0) * item.quantity,
       0
@@ -97,103 +82,58 @@ export async function createOrderFromCart(
       }
     }
 
-    // Step 4: Create order (database UNIQUE constraint prevents duplicates)
-    const { data: order, error: orderError } = await supabaseAdmin
-      .from('orders')
-      .insert({
-        user_id: userId,
-        total,
-        status: 'processing',
-        stripe_payment_intent_id: sessionId,
-        confirmation_email_sent: false, // Will be set when email is sent
-      })
-      .select()
-      .single()
-
-    if (orderError) {
-      // Check if it's a duplicate error (race condition)
-      if (orderError.code === '23505') {
-        // Order was created by another process, fetch it
-        const { data: duplicateOrder } = await supabaseAdmin
-          .from('orders')
-          .select('*')
-          .eq('stripe_payment_intent_id', sessionId)
-          .single()
-
-        if (duplicateOrder) {
-          return {
-            success: true,
-            order: duplicateOrder as Order,
-            wasDuplicate: true,
-          }
-        }
-      }
-
-      return {
-        success: false,
-        error: `Failed to create order: ${orderError.message}`,
-      }
-    }
-
-    if (!order) {
-      return {
-        success: false,
-        error: 'Order creation returned no data',
-      }
-    }
-
-    // Step 5: Create order items
-    const orderItems = cartItems.map((item) => ({
-      order_id: order.id,
+    // Step 3: Prepare order items for JSONB
+    const orderItemsJson = cartItems.map((item) => ({
       product_id: item.product_id,
       quantity: item.quantity,
       price: item.products?.price || 0,
     }))
 
-    const { error: orderItemsError } = await supabaseAdmin
-      .from('order_items')
-      .insert(orderItems)
+    // Step 4: Call PostgreSQL transaction function
+    // This handles order creation, order items, cart clearing, and wishlist removal atomically
+    const { data: result, error: rpcError } = await supabaseAdmin.rpc(
+      'create_order_from_cart_transaction',
+      {
+        p_user_id: userId,
+        p_session_id: sessionId,
+        p_total: total,
+        p_order_items: orderItemsJson,
+      }
+    )
 
-    if (orderItemsError) {
-      // Rollback: Delete the order if items creation fails
-      await supabaseAdmin.from('orders').delete().eq('id', order.id)
-
+    if (rpcError) {
       return {
         success: false,
-        error: `Failed to create order items: ${orderItemsError.message}`,
+        error: `Failed to create order: ${rpcError.message}`,
       }
     }
 
-    // Step 6: Clear cart (non-critical, don't fail if this fails)
-    const { error: cartError } = await supabaseAdmin
-      .from('cart_items')
-      .delete()
-      .eq('user_id', userId)
-
-    if (cartError) {
-      // Log but don't fail - order is already created
-      console.error('[createOrderFromCart] Failed to clear cart:', cartError)
+    // Step 5: Parse result from PostgreSQL function
+    if (!result || !result.success) {
+      return {
+        success: false,
+        error: result?.error || 'Order creation failed',
+      }
     }
 
-    // Step 7: Remove purchased items from wishlist (non-critical)
-    const purchasedProductIds = cartItems.map((item) => item.product_id)
-    if (purchasedProductIds.length > 0) {
-      const { error: wishlistError } = await supabaseAdmin
-        .from('wishlist')
-        .delete()
-        .eq('user_id', userId)
-        .in('product_id', purchasedProductIds)
+    // Step 6: Fetch the created order with full details
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('id', result.order_id)
+      .single()
 
-      if (wishlistError) {
-        // Log but don't fail
-        console.error('[createOrderFromCart] Failed to remove from wishlist:', wishlistError)
+    if (orderError || !order) {
+      return {
+        success: false,
+        error: 'Order created but failed to fetch details',
       }
     }
 
     return {
       success: true,
       order: order as Order,
-      wasDuplicate: false,
+      wasDuplicate: result.was_duplicate || false,
     }
   } catch (error: any) {
     return {

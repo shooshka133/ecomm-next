@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { CheckCircle, Package, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { createSupabaseClient } from '@/lib/supabase/client'
+import { CartItemWithProduct } from '@/types'
 
 interface ProcessingState {
   status: 'idle' | 'checking' | 'waiting' | 'creating' | 'sending_email' | 'complete' | 'error'
@@ -97,34 +98,28 @@ export default function CheckoutSuccessPage() {
           return
         }
 
-        // Step 2: Wait for webhook with exponential backoff
-        // Reduced retries and delays for faster fallback
-        const maxRetries = 3 // Reduced from 5 to 3
-        const baseDelay = 500 // Reduced from 1000ms to 500ms
+        // Step 2: Wait for webhook with exponential backoff retry logic
+        setProcessing({ status: 'waiting', message: 'Processing your order...' })
+        
+        // Retry logic: check for order with exponential backoff
         let orderFound = false
-
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
-          const delay = baseDelay * Math.pow(2, attempt) // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+        const maxRetries = 5
+        const initialDelay = 500 // Start with 500ms
+        
+        for (let attempt = 0; attempt < maxRetries && !orderFound; attempt++) {
+          const delay = initialDelay * Math.pow(2, attempt)
+          await new Promise(resolve => setTimeout(resolve, delay))
           
-          if (attempt > 0) {
-            setProcessing({
-              status: 'waiting',
-              message: `Waiting for webhook... (attempt ${attempt + 1}/${maxRetries})`,
-            })
-            await new Promise(resolve => setTimeout(resolve, delay))
-          }
-
-          // Check if order was created by webhook
           const { data: orderAfterWait } = await supabase
             .from('orders')
             .select('id, user_id, total, status, created_at')
             .eq('stripe_payment_intent_id', sessionId)
             .maybeSingle()
-
+          
           if (orderAfterWait) {
-            console.log('[Success Page] Order created by webhook:', orderAfterWait.id)
             orderFound = true
-
+            console.log('[Success Page] Order created by webhook:', orderAfterWait.id)
+            
             // Ensure cart is cleared
             const { data: cartItems } = await supabase
               .from('cart_items')
@@ -144,10 +139,12 @@ export default function CheckoutSuccessPage() {
             return
           }
         }
+        
+        // If order still not found after retries, continue to fallback creation
+
 
         // Step 3: Webhook didn't create order, create it manually (fallback)
-        if (!orderFound) {
-          setProcessing({ status: 'creating', message: 'Creating order...' })
+        setProcessing({ status: 'creating', message: 'Creating order...' })
 
           // Get cart items with product details (client-side)
           // Even if cart is empty, the API route can fetch from Stripe session
@@ -158,7 +155,11 @@ export default function CheckoutSuccessPage() {
 
           // Calculate total (if cart items exist)
           const total = cartItems?.reduce(
-            (sum: number, item: any) => sum + (item.products?.price || 0) * item.quantity,
+            (sum: number, item) => {
+              const price = item.products?.price || 0
+              const quantity = item.quantity || 0
+              return sum + price * quantity
+            },
             0
           ) || 0
 
@@ -170,7 +171,7 @@ export default function CheckoutSuccessPage() {
             body: JSON.stringify({
               userId: user.id,
               sessionId,
-              cartItems: cartItems?.map((item: any) => ({
+              cartItems: cartItems?.map((item) => ({
                 product_id: item.product_id,
                 quantity: item.quantity,
                 price: item.products?.price || 0,

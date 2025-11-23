@@ -373,13 +373,13 @@ const { error: deleteError } = await supabaseAdmin.from('cart_items').delete(...
 ## Next Steps
 
 1. ✅ Create this issue list (DONE)
-2. ⏳ Create database migration for idempotency
-3. ⏳ Refactor webhook with transaction support
-4. ⏳ Refactor success page with improved race condition handling
-5. ⏳ Refactor send-order-email endpoint
-6. ⏳ Add shared types and improve type safety
-7. ⏳ Create automated tests
-8. ⏳ Create CHANGES.md
+2. ✅ Create database migration for idempotency (DONE - `supabase-idempotency-migration.sql`)
+3. ✅ Refactor webhook with transaction support (DONE - uses PostgreSQL transaction function)
+4. ✅ Refactor success page with improved race condition handling (DONE - exponential backoff)
+5. ✅ Refactor send-order-email endpoint (DONE - uses idempotent function)
+6. ✅ Add shared types and improve type safety (DONE - removed `any` types)
+7. ⏳ Create automated tests (PENDING - test infrastructure exists)
+8. ✅ Create CHANGES.md (DONE - comprehensive documentation)
 
 ---
 

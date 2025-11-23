@@ -12,9 +12,9 @@
 This document describes all changes made during the comprehensive codebase audit and refactoring. The refactoring focused on **idempotency**, **race condition handling**, **transaction support**, and **code quality improvements**.
 
 **Total Issues Fixed**: 15  
-**Files Modified**: 8  
-**Files Created**: 6  
-**Database Migrations**: 1
+**Files Modified**: 10  
+**Files Created**: 7  
+**Database Migrations**: 2
 
 ---
 
@@ -421,9 +421,85 @@ If issues occur:
 
 ---
 
+## Latest Updates (2025-01-11)
+
+### PostgreSQL Transaction Function
+
+**File**: `supabase-order-creation-transaction.sql` (NEW)
+
+**What Changed**:
+- Created `create_order_from_cart_transaction()` PostgreSQL function
+- All order operations (order creation, order items, cart clearing, wishlist removal) happen in a single atomic transaction
+- If any step fails, entire transaction rolls back automatically
+- Updated `lib/orders/create.ts` to use this function instead of manual rollback
+
+**Why**:
+- True atomicity - no partial orders possible
+- Database-level transaction ensures data consistency
+- Eliminates need for manual rollback logic
+- More reliable than application-level transaction handling
+
+**Before**:
+```typescript
+// Manual rollback if order items fail
+const { data: order } = await supabaseAdmin.from('orders').insert(...)
+const { error: orderItemsError } = await supabaseAdmin.from('order_items').insert(...)
+if (orderItemsError) {
+  await supabaseAdmin.from('orders').delete().eq('id', order.id) // Manual rollback
+}
+```
+
+**After**:
+```typescript
+// All operations in single PostgreSQL transaction
+const { data: result } = await supabaseAdmin.rpc('create_order_from_cart_transaction', {
+  p_user_id: userId,
+  p_session_id: sessionId,
+  p_total: total,
+  p_order_items: orderItemsJson,
+})
+// If any step fails, PostgreSQL automatically rolls back everything
+```
+
+**Impact**:
+- ✅ True atomicity - no partial orders possible
+- ✅ Simpler code - no manual rollback needed
+- ✅ Database-level guarantees
+- ✅ Better error handling
+
+### Webhook Improvements
+
+**File**: `app/api/webhook/route.ts`
+
+**What Changed**:
+- Now uses shared `createOrderFromCart()` function (which uses PostgreSQL transaction)
+- Added webhook event idempotency check using `processed_webhook_events` table
+- Improved type safety (removed `any` types where possible)
+- Better structured logging
+
+**Impact**:
+- ✅ Uses transaction-based order creation
+- ✅ Prevents duplicate webhook processing
+- ✅ Better type safety
+- ✅ Consistent with success page
+
+### Success Page Improvements
+
+**File**: `app/checkout/success/page.tsx`
+
+**What Changed**:
+- Improved exponential backoff retry logic (5 attempts with increasing delays)
+- Better type safety (removed `any` types)
+- Uses shared order creation function (with transaction support)
+
+**Impact**:
+- ✅ More efficient retry logic
+- ✅ Better type safety
+- ✅ Uses transaction-based order creation
+
 ## Future Improvements
 
-1. **Full Transaction Support**: Use PostgreSQL transactions for atomic operations
+1. ~~**Full Transaction Support**: Use PostgreSQL transactions for atomic operations~~ ✅ **DONE**
 2. **Retry Queue**: Add job queue for failed email sends
 3. **Monitoring**: Add metrics for order creation, email sending
 4. **Rate Limiting**: Add rate limiting to API endpoints

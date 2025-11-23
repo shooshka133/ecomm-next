@@ -2,51 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
-import { createOrderFromCart, getCartItemsWithProducts, CreateOrderCartItem } from '@/lib/orders/create'
+import { createOrderFromCart } from '@/lib/orders/create'
 import { sendOrderConfirmationEmailIdempotent } from '@/lib/orders/email'
+import { CartItemWithProduct } from '@/types'
 
 // Use service role key for webhook to bypass RLS
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-// Structured logging helper
-interface LogContext {
-  sessionId?: string
-  userId?: string
-  orderId?: string
-  eventId?: string
-  [key: string]: any
-}
-
-const log = (level: 'info' | 'warn' | 'error', message: string, context?: LogContext) => {
-  const timestamp = new Date().toISOString()
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    ...context,
-  }
-  
-  if (level === 'error') {
-    console.error(`[Webhook] ${JSON.stringify(logEntry)}`)
-  } else if (level === 'warn') {
-    console.warn(`[Webhook] ${JSON.stringify(logEntry)}`)
-  } else {
-    console.log(`[Webhook] ${JSON.stringify(logEntry)}`)
-  }
-}
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
-  const correlationId = crypto.randomUUID() // For request tracking
-
-  log('info', 'Webhook received', { correlationId })
 
   if (!signature) {
-    log('error', 'No signature provided', { correlationId })
     return NextResponse.json(
       { error: 'No signature' },
       { status: 400 }
@@ -61,267 +31,115 @@ export async function POST(request: NextRequest) {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET || ''
     )
-    log('info', 'Webhook signature verified', { correlationId, eventId: event.id, eventType: event.type })
   } catch (err: any) {
-    log('error', 'Signature verification failed', { correlationId, error: err.message })
+    console.error('Webhook signature verification failed:', err.message)
     return NextResponse.json(
       { error: 'Invalid signature' },
       { status: 400 }
     )
   }
 
-  // Check if event was already processed (idempotency)
-  const { data: processedEvent } = await supabaseAdmin
-    .from('processed_webhook_events')
-    .select('id, order_id, processed_at')
-    .eq('stripe_event_id', event.id)
-    .maybeSingle()
-
-  if (processedEvent) {
-    log('info', 'Event already processed', {
-      correlationId,
-      eventId: event.id,
-      orderId: processedEvent.order_id,
-      processedAt: processedEvent.processed_at,
-    })
-    return NextResponse.json({
-      received: true,
-      message: 'Event already processed',
-      orderId: processedEvent.order_id,
-    })
-  }
-
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     const userId = session.metadata?.user_id
     const sessionId = session.id
-
-    log('info', 'Processing checkout.session.completed', {
-      correlationId,
-      sessionId,
-      userId,
-      eventId: event.id,
-    })
+    const eventId = event.id
 
     if (!userId) {
-      log('error', 'No user_id in session metadata', { correlationId, sessionId, eventId: event.id })
+      console.error('[Webhook] No user_id in session metadata', { eventId, sessionId })
       return NextResponse.json({ error: 'No user_id' }, { status: 400 })
     }
 
-    // Check email configuration
-    if (!process.env.RESEND_API_KEY) {
-      log('warn', 'RESEND_API_KEY not configured', { correlationId })
-    }
+    try {
+      // Step 1: Check if this webhook event was already processed (idempotency)
+      const { data: processedEvent } = await supabaseAdmin
+        .from('processed_webhook_events')
+        .select('id, order_id')
+        .eq('stripe_event_id', eventId)
+        .maybeSingle()
 
-    // Step 1: Get cart items with product details
-    log('info', 'Fetching cart items', { correlationId, userId })
-    let cartItems: CreateOrderCartItem[] = (await getCartItemsWithProducts(userId)) as CreateOrderCartItem[]
-
-    // If cart is empty, try to fetch from Stripe session (cart might have been cleared)
-    if (!cartItems || cartItems.length === 0) {
-      log('warn', 'No cart items found, fetching from Stripe session', { correlationId, userId, sessionId })
-      
-      try {
-        // Fetch Stripe checkout session to get line items
-        const stripeSession = await stripe.checkout.sessions.retrieve(sessionId, {
-          expand: ['line_items', 'line_items.data.price.product'],
-        })
-
-        if (stripeSession.payment_status === 'paid' && stripeSession.line_items?.data) {
-          const lineItems = stripeSession.line_items.data
-          
-          // Get product IDs from session metadata
-          const productIdsFromMetadata = stripeSession.metadata?.product_ids?.split(',') || []
-          
-          // Extract product IDs
-          const productIds: string[] = []
-          lineItems.forEach((lineItem: any, index: number) => {
-            const productId = 
-              lineItem.price?.product?.metadata?.product_id || 
-              productIdsFromMetadata[index] ||
-              null
-            if (productId && !productId.startsWith('stripe-')) productIds.push(productId)
-          })
-          
-          // Fetch products from database
-          if (productIds.length > 0) {
-            const { data: products } = await supabaseAdmin
-              .from('products')
-              .select('id, name, price, image_url')
-              .in('id', productIds)
-            
-            // Reconstruct cart items from Stripe data
-            cartItems = lineItems.map((lineItem: any, index: number): CreateOrderCartItem => {
-              const productId = 
-                lineItem.price?.product?.metadata?.product_id || 
-                productIdsFromMetadata[index]
-              const product = products?.find((p) => p.id === productId)
-              
-              return {
-                id: `webhook-${lineItem.id}`,
-                user_id: userId,
-                product_id: productId || product?.id || `stripe-${lineItem.id}`,
-                quantity: lineItem.quantity || 1,
-                products: product ? {
-                  price: Number(product.price) || (lineItem.price?.unit_amount || 0) / 100,
-                  name: product.name || 'Product',
-                  image_url: product.image_url,
-                } : {
-                  price: (lineItem.price?.unit_amount || 0) / 100,
-                  name: lineItem.description || 'Product',
-                  image_url: undefined,
-                },
-              }
-            })
-            
-            log('info', 'Reconstructed cart items from Stripe', { 
-              correlationId, 
-              itemCount: cartItems.length,
-              productIdsFound: productIds.length,
-            })
-          }
-        }
-      } catch (stripeError: any) {
-        log('error', 'Failed to fetch Stripe session', { 
-          correlationId, 
-          error: stripeError.message,
-          sessionId,
+      if (processedEvent) {
+        console.log('[Webhook] Event already processed', { eventId, orderId: processedEvent.order_id })
+        return NextResponse.json({
+          received: true,
+          orderId: processedEvent.order_id,
+          message: 'Event already processed',
         })
       }
-    }
 
-    if (!cartItems || cartItems.length === 0) {
-      log('error', 'No cart items found and unable to fetch from Stripe', { correlationId, userId, sessionId })
-      
-      // Mark event as processed to prevent retries
-      try {
-        await supabaseAdmin
-          .from('processed_webhook_events')
-          .insert({ 
-            stripe_event_id: event.id,
-            event_type: event.type,
-            processed_at: new Date().toISOString(),
-          })
-      } catch (err) {
-        // Ignore errors if table doesn't exist
+      // Step 2: Get cart items with product details
+      const { data: cartItems, error: cartError } = await supabaseAdmin
+        .from('cart_items')
+        .select('*, products(id, name, price, image_url)')
+        .eq('user_id', userId)
+
+      if (cartError) {
+        console.error('[Webhook] Error fetching cart items:', cartError)
+        throw new Error('Failed to fetch cart items')
+      }
+
+      if (!cartItems || cartItems.length === 0) {
+        console.warn('[Webhook] No cart items found for user', { userId, sessionId })
+        // Mark event as processed even if no cart items (to prevent retries)
+        await supabaseAdmin.rpc('mark_webhook_event_processed', {
+          p_stripe_event_id: eventId,
+          p_event_type: event.type,
+          p_order_id: null,
+          p_metadata: { warning: 'No cart items found' },
+        })
+        return NextResponse.json({ received: true, warning: 'No cart items found' })
+      }
+
+      // Step 3: Create order using shared function (with transaction support)
+      const orderResult = await createOrderFromCart({
+        userId,
+        sessionId,
+        cartItems: cartItems as CartItemWithProduct[],
+      })
+
+      if (!orderResult.success || !orderResult.order) {
+        console.error('[Webhook] Order creation failed:', orderResult.error)
+        throw new Error(orderResult.error || 'Failed to create order')
+      }
+
+      // Step 4: Mark webhook event as processed
+      await supabaseAdmin.rpc('mark_webhook_event_processed', {
+        p_stripe_event_id: eventId,
+        p_event_type: event.type,
+        p_order_id: orderResult.order.id,
+        p_metadata: { was_duplicate: orderResult.wasDuplicate },
+      })
+
+      // Step 5: Send order confirmation email (idempotent, non-blocking)
+      if (!orderResult.wasDuplicate) {
+        // Only send email if order was newly created
+        sendOrderConfirmationEmailIdempotent({
+          orderId: orderResult.order.id,
+          userId,
+        }).catch((emailError) => {
+          console.error('[Webhook] Email sending failed (non-blocking):', emailError)
+        })
       }
 
       return NextResponse.json({
         received: true,
-        warning: 'No cart items found and unable to reconstruct from Stripe',
-      })
-    }
-
-    log('info', 'Cart items fetched', {
-      correlationId,
-      userId,
-      itemCount: cartItems.length,
-    })
-
-    // Step 2: Create order (idempotent - checks for existing order)
-    log('info', 'Creating order', { correlationId, userId, sessionId })
-    const orderResult = await createOrderFromCart({
-      userId,
-      sessionId,
-      cartItems,
-    })
-
-    if (!orderResult.success) {
-      log('error', 'Failed to create order', {
-        correlationId,
-        userId,
-        sessionId,
-        error: orderResult.error,
-      })
-      return NextResponse.json(
-        { error: orderResult.error || 'Failed to create order' },
-        { status: 500 }
-      )
-    }
-
-    if (!orderResult.order) {
-      log('error', 'Order creation returned no order', { correlationId, userId, sessionId })
-      return NextResponse.json(
-        { error: 'Order creation failed' },
-        { status: 500 }
-      )
-    }
-
-    const order = orderResult.order
-
-    log('info', 'Order created', {
-      correlationId,
-      orderId: order.id,
-      userId,
-      sessionId,
-      wasDuplicate: orderResult.wasDuplicate,
-    })
-
-    // Mark webhook event as processed
-    await supabaseAdmin.rpc('mark_webhook_event_processed', {
-      p_stripe_event_id: event.id,
-      p_event_type: event.type,
-      p_order_id: order.id,
-      p_metadata: {
-        sessionId,
-        userId,
+        orderId: orderResult.order.id,
+        message: 'Order created successfully',
         wasDuplicate: orderResult.wasDuplicate,
-      },
-    })
-
-    // Step 3: Send order confirmation email (idempotent)
-    if (!orderResult.wasDuplicate) {
-      // Only send email if order was just created (not a duplicate)
-      log('info', 'Sending order confirmation email', {
-        correlationId,
-        orderId: order.id,
+      })
+    } catch (error: any) {
+      console.error('[Webhook] Error processing checkout.session.completed:', {
+        error: error.message,
+        eventId,
+        sessionId,
         userId,
       })
-
-      const emailResult = await sendOrderConfirmationEmailIdempotent({
-        orderId: order.id,
-        userId,
-      })
-
-      if (emailResult.success) {
-        log('info', 'Order confirmation email sent', {
-          correlationId,
-          orderId: order.id,
-          emailId: emailResult.emailId,
-          wasAlreadySent: emailResult.wasAlreadySent,
-        })
-      } else {
-        log('error', 'Failed to send order confirmation email', {
-          correlationId,
-          orderId: order.id,
-          error: emailResult.error,
-        })
-        // Don't fail webhook if email fails - order is created
-      }
-    } else {
-      log('info', 'Skipping email - order was duplicate', {
-        correlationId,
-        orderId: order.id,
-      })
+      return NextResponse.json(
+        { error: 'Failed to process checkout session' },
+        { status: 500 }
+      )
     }
-
-    return NextResponse.json({
-      received: true,
-      orderId: order.id,
-      message: 'Order created successfully',
-      wasDuplicate: orderResult.wasDuplicate,
-    })
   }
 
-  // Event type not handled
-  log('info', 'Event type not handled', {
-    correlationId,
-    eventType: event.type,
-    eventId: event.id,
-  })
-
-  return NextResponse.json({
-    received: true,
-    message: 'Event type not handled',
-  })
+  return NextResponse.json({ received: true, message: 'Event type not handled' })
 }
