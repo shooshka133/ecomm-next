@@ -1,5 +1,6 @@
 'use client'
 
+// Navbar component with admin access control
 import Link from 'next/link'
 import { useAuth } from './AuthProvider'
 import { useRouter } from 'next/navigation'
