@@ -28,7 +28,8 @@ export default function AuthPage() {
   useEffect(() => {
     const oauthRetry = searchParams.get('oauth_retry')
     const provider = searchParams.get('provider')
-    const next = searchParams.get('next') || '/'
+    // Support both 'next' and 'returnTo' parameters for compatibility
+    const next = searchParams.get('next') || searchParams.get('returnTo') || '/'
     
     // Only retry if flag is set, we haven't already initiated retry, and not already loading
     if (oauthRetry === 'true' && provider === 'google' && !googleLoading && !retryInitiatedRef.current) {
@@ -112,8 +113,8 @@ export default function AuthPage() {
       
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        // Redirect to next URL or home
-        const next = searchParams.get('next') || '/'
+        // Redirect to next URL or home (support both 'next' and 'returnTo')
+        const next = searchParams.get('next') || searchParams.get('returnTo') || '/'
         router.replace(next)
         router.refresh()
       }
@@ -209,8 +210,8 @@ export default function AuthPage() {
           setMessageType('success')
           setMessage('Check your email to confirm your account! After confirmation, you can sign in.')
         } else if (data.session) {
-          // Auto-confirmed, redirect to next URL or home
-          const next = searchParams.get('next') || '/'
+          // Auto-confirmed, redirect to next URL or home (support both 'next' and 'returnTo')
+          const next = searchParams.get('next') || searchParams.get('returnTo') || '/'
           router.push(next)
           router.refresh()
         }
@@ -230,8 +231,8 @@ export default function AuthPage() {
           throw error
         }
         if (data.session) {
-          // Redirect to next URL or home
-          const next = searchParams.get('next') || '/'
+          // Redirect to next URL or home (support both 'next' and 'returnTo')
+          const next = searchParams.get('next') || searchParams.get('returnTo') || '/'
           router.push(next)
           router.refresh()
         }
@@ -276,8 +277,8 @@ export default function AuthPage() {
     setMessageType('error')
     
     try {
-      // Get the next parameter from URL, or default to home
-      const next = searchParams.get('next') || '/'
+      // Get the next parameter from URL, or default to home (support both 'next' and 'returnTo')
+      const next = searchParams.get('next') || searchParams.get('returnTo') || '/'
       
       const result = await signInWithGoogle({
         redirectTo: next, // Use next parameter from URL
