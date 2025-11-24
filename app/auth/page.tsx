@@ -276,10 +276,11 @@ export default function AuthPage() {
     setMessageType('error')
     
     try {
-      // You can change '/' to any page you want to redirect to after sign-in
-      // Examples: '/profile', '/dashboard', '/account', etc.
+      // Get the next parameter from URL, or default to home
+      const next = searchParams.get('next') || '/'
+      
       const result = await signInWithGoogle({
-        redirectTo: '/', // Change this to your desired redirect page
+        redirectTo: next, // Use next parameter from URL
         onError: (error) => {
           setMessageType('error')
           setMessage(error)
@@ -287,7 +288,7 @@ export default function AuthPage() {
         },
         onSuccess: () => {
           // Redirect happens automatically
-          console.log('✅ Google OAuth initiated successfully')
+          console.log('✅ Google OAuth initiated successfully', { redirectTo: next })
         },
       })
 
