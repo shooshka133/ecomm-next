@@ -10,6 +10,7 @@ import {
   Row,
   Column,
   Hr,
+  Button,
 } from '@react-email/components'
 
 interface OrderConfirmationEmailProps {
@@ -26,6 +27,8 @@ interface OrderConfirmationEmailProps {
   orderDate: string
   trackingNumber?: string
   estimatedDelivery?: string
+  orderUrl?: string
+  orderId?: string
 }
 
 export default function OrderConfirmationEmail({
@@ -37,7 +40,22 @@ export default function OrderConfirmationEmail({
   orderDate = new Date().toLocaleDateString(),
   trackingNumber,
   estimatedDelivery,
+  orderUrl,
+  orderId,
 }: OrderConfirmationEmailProps) {
+  // Use provided orderUrl or fallback to production URL, then append /orders path
+  // If orderId is provided, add it as a query parameter to auto-expand the order
+  let baseUrl = orderUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+  
+  // Ensure baseUrl doesn't have trailing slash
+  baseUrl = baseUrl.replace(/\/$/, '')
+  
+  // Ensure /orders is always appended (not already in baseUrl)
+  const ordersPageUrl = baseUrl.includes('/orders') ? baseUrl : `${baseUrl}/orders`
+  
+  // Construct final URL with orderId query parameter
+  const orderPageUrl = orderId ? `${ordersPageUrl}?orderId=${encodeURIComponent(orderId)}` : ordersPageUrl
+  
   return (
     <Html>
       <Head />
@@ -106,6 +124,16 @@ export default function OrderConfirmationEmail({
               )}
             </Section>
           )}
+
+          {/* Call to Action */}
+          <Section style={section}>
+            <Text style={text}>
+              You can track your order status anytime by visiting your orders page.
+            </Text>
+            <Button style={button} href={orderPageUrl}>
+              View Order Details
+            </Button>
+          </Section>
 
           {/* Footer */}
           <Section style={footer}>
@@ -286,6 +314,20 @@ const estimatedText = {
   fontSize: '14px',
   color: '#374151',
   margin: '0',
+}
+
+const button = {
+  backgroundColor: '#4F46E5',
+  borderRadius: '8px',
+  color: '#ffffff',
+  fontSize: '16px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'block',
+  padding: '14px 20px',
+  margin: '24px auto',
+  maxWidth: '280px',
 }
 
 const footer = {

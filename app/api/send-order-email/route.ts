@@ -110,6 +110,18 @@ export async function POST(request: NextRequest) {
       image_url: item.products?.image_url,
     }))
 
+    // Get order URL (fallback to production URL)
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+    const isProduction = process.env.NODE_ENV === 'production'
+    
+    // Ensure baseUrl doesn't have trailing slash
+    baseUrl = baseUrl.replace(/\/$/, '')
+    
+    // In production, replace localhost with production URL
+    const orderUrl = (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && isProduction
+      ? 'https://store.shooshka.online'
+      : baseUrl
+
     console.log('📧 [API] Calling sendOrderConfirmationEmail...')
     
     // Send email
@@ -125,6 +137,8 @@ export async function POST(request: NextRequest) {
         day: 'numeric',
       }),
       trackingNumber: order.tracking_number,
+      orderUrl,
+      orderId: order.id, // Pass orderId to link directly to this order
     })
 
     console.log('📧 [API] Email function returned:', JSON.stringify(result))

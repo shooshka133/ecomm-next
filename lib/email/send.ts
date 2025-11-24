@@ -25,6 +25,8 @@ export interface OrderEmailData {
   orderDate: string
   trackingNumber?: string
   estimatedDelivery?: string
+  orderUrl?: string
+  orderId?: string
 }
 
 export interface ShippingEmailData {
