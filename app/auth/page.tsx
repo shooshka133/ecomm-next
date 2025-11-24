@@ -112,7 +112,9 @@ export default function AuthPage() {
       
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        router.replace('/')
+        // Redirect to next URL or home
+        const next = searchParams.get('next') || '/'
+        router.replace(next)
         router.refresh()
       }
     }

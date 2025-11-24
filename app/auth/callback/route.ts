@@ -7,7 +7,9 @@ export async function GET(request: NextRequest) {
   const code = url.searchParams.get('code')
   const error = url.searchParams.get('error')
   const errorDescription = url.searchParams.get('error_description')
-  const next = url.searchParams.get('next') || '/'
+  // Decode the next parameter to handle URL-encoded paths with query params
+  const nextRaw = url.searchParams.get('next')
+  const next = nextRaw ? decodeURIComponent(nextRaw) : '/'
 
   // ALWAYS log in production to debug issues
   const logError = (msg: string, data?: any) => {
@@ -107,7 +109,9 @@ export async function GET(request: NextRequest) {
       email: data.session.user.email, 
       userId: data.session.user.id,
       hasAccessToken: !!data.session.access_token,
-      redirectTo: next 
+      redirectTo: next,
+      nextRaw: nextRaw || 'not provided',
+      nextDecoded: next
     })
     
     // IMPORTANT: Set the session explicitly to ensure cookies are properly set
@@ -118,11 +122,30 @@ export async function GET(request: NextRequest) {
     
     log('Session set in Supabase client')
     
-    // Create redirect URL with a small delay parameter to ensure cookies propagate
-    const redirectUrl = new URL(next, url.origin)
-    redirectUrl.searchParams.set('_t', Date.now().toString())
+    // Create redirect URL - preserve existing query parameters from next
+    // If next already has query params (like ?orderId=xxx), preserve them
+    let redirectUrl: URL
+    try {
+      // Try to parse next as a full URL first
+      if (next.startsWith('http://') || next.startsWith('https://')) {
+        redirectUrl = new URL(next)
+      } else {
+        // It's a relative path, construct full URL
+        redirectUrl = new URL(next, url.origin)
+      }
+    } catch (err) {
+      logError('Failed to parse next URL, using home', { next, error: err })
+      redirectUrl = new URL('/', url.origin)
+    }
+    
+    // Only add _t if it doesn't already exist (to avoid duplicates)
+    if (!redirectUrl.searchParams.has('_t')) {
+      redirectUrl.searchParams.set('_t', Date.now().toString())
+    }
     
     log('Creating redirect response to:', redirectUrl.href)
+    log('Next parameter was:', next)
+    log('Final redirect URL:', redirectUrl.toString())
     
     // Create response with redirect
     const response = NextResponse.redirect(redirectUrl)
