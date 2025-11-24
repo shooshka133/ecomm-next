@@ -39,6 +39,25 @@ export default function Navbar() {
     }
   }, [user, supabase])
 
+  const checkAdminStatus = useCallback(async () => {
+    if (!user) {
+      setIsAdmin(null)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/check')
+      if (response.ok) {
+        const data = await response.json()
+        setIsAdmin(data.isAdmin)
+      } else {
+        setIsAdmin(false)
+      }
+    } catch (error) {
+      setIsAdmin(false)
+    }
+  }, [user])
+
   useEffect(() => {
     if (user) {
       loadCartCount()
@@ -81,25 +100,6 @@ export default function Navbar() {
       setIsAdmin(null)
     }
   }, [user, supabase, loadCartCount, checkAdminStatus])
-
-  const checkAdminStatus = useCallback(async () => {
-    if (!user) {
-      setIsAdmin(null)
-      return
-    }
-
-    try {
-      const response = await fetch('/api/admin/check')
-      if (response.ok) {
-        const data = await response.json()
-        setIsAdmin(data.isAdmin)
-      } else {
-        setIsAdmin(false)
-      }
-    } catch (error) {
-      setIsAdmin(false)
-    }
-  }, [user])
 
   // Listen for custom events from other components
   useEffect(() => {
