@@ -20,7 +20,7 @@ const supabaseAdmin = createClient(
  */
 export async function POST(request: NextRequest) {
   try {
-    const { orderId } = await request.json()
+    const { orderId, force } = await request.json()
 
     if (!orderId) {
       return NextResponse.json({ error: 'orderId required' }, { status: 400 })
@@ -54,6 +54,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Order has no tracking number' 
       }, { status: 400 })
+    }
+
+    // Prevent duplicate emails: Only send if order was shipped recently (within last 24 hours)
+    // This prevents accidentally sending emails to old orders that already received shipping notifications
+    // If you need to send to older orders, you can manually call this endpoint with force=true parameter
+    if (!force && order.shipped_at) {
+      const shippedDate = new Date(order.shipped_at)
+      const twentyFourHoursAgo = new Date()
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+      
+      if (shippedDate < twentyFourHoursAgo) {
+        console.warn('⚠️ [Shipping Email] Order was shipped more than 24 hours ago. Use force=true to send anyway.')
+        return NextResponse.json({ 
+          error: 'Order was shipped more than 24 hours ago. Email was likely already sent. Add "force": true to the request body if you need to resend.',
+          shippedAt: order.shipped_at,
+          hint: 'To force send, include "force": true in the request body'
+        }, { status: 400 })
+      }
     }
 
     console.log('✅ [Shipping Email] Order found:', order.id)

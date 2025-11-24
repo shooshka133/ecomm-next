@@ -42,17 +42,22 @@ export default function OrdersPage() {
 
   // Auto-expand order if orderId is in URL
   useEffect(() => {
-    if (orders.length > 0 && !loading) {
-      const orderIdFromUrl = searchParams.get('orderId');
-      if (orderIdFromUrl && orders.some(order => order.id === orderIdFromUrl)) {
-        setExpandedOrder(orderIdFromUrl);
+    const orderIdFromUrl = searchParams.get('orderId');
+    if (orderIdFromUrl && orders.length > 0 && !loading) {
+      // Check if order exists (case-insensitive match for UUID)
+      const matchingOrder = orders.find(order => 
+        order.id.toLowerCase() === orderIdFromUrl.toLowerCase()
+      );
+      
+      if (matchingOrder) {
+        setExpandedOrder(matchingOrder.id);
         // Scroll to the order after a short delay to ensure it's rendered
         setTimeout(() => {
-          const element = document.getElementById(`order-${orderIdFromUrl}`);
+          const element = document.getElementById(`order-${matchingOrder.id}`);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
-        }, 300);
+        }, 500); // Increased delay to ensure DOM is ready
       }
     }
   }, [orders, loading, searchParams]);

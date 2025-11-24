@@ -10,6 +10,7 @@ import {
   Row,
   Column,
   Hr,
+  Button,
 } from '@react-email/components'
 
 interface DeliveryNotificationEmailProps {
@@ -25,6 +26,8 @@ interface DeliveryNotificationEmailProps {
     image_url?: string
   }>
   total: number
+  orderUrl?: string
+  orderId?: string
 }
 
 export default function DeliveryNotificationEmail({
@@ -35,7 +38,15 @@ export default function DeliveryNotificationEmail({
   deliveredDate = new Date().toLocaleDateString(),
   orderItems = [],
   total = 0,
+  orderUrl,
+  orderId,
 }: DeliveryNotificationEmailProps) {
+  // Use provided orderUrl or fallback to production URL, then append /orders path
+  // If orderId is provided, add it as a query parameter to auto-expand the order
+  const baseUrl = orderUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+  // Ensure /orders is always appended
+  const ordersPageUrl = `${baseUrl}/orders`
+  const orderPageUrl = orderId ? `${ordersPageUrl}?orderId=${orderId}` : ordersPageUrl
   return (
     <Html>
       <Head />
@@ -100,6 +111,16 @@ export default function DeliveryNotificationEmail({
                 <Text style={totalAmount}>${total.toFixed(2)}</Text>
               </Column>
             </Row>
+          </Section>
+
+          {/* Call to Action */}
+          <Section style={section}>
+            <Text style={text}>
+              You can view your order details and leave a review anytime.
+            </Text>
+            <Button style={button} href={orderPageUrl}>
+              View Order Details
+            </Button>
           </Section>
 
           {/* Feedback Section */}
@@ -282,6 +303,20 @@ const itemPrice = {
 const divider = {
   borderColor: '#E5E7EB',
   margin: '16px 0',
+}
+
+const button = {
+  backgroundColor: '#4F46E5',
+  borderRadius: '8px',
+  color: '#ffffff',
+  fontSize: '16px',
+  fontWeight: '600',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'block',
+  padding: '14px 20px',
+  margin: '24px auto',
+  maxWidth: '280px',
 }
 
 const totalRow = {

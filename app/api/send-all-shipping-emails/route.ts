@@ -18,11 +18,16 @@ export async function GET(request: NextRequest) {
   try {
     console.log('📦 [Bulk Shipping Email] Finding shipped orders...')
 
-    // Get all shipped orders
+    // Only send emails for orders shipped in the last 24 hours to prevent duplicate emails to old orders
+    const twentyFourHoursAgo = new Date()
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+
+    // Get all shipped orders from the last 24 hours only
     const { data: shippedOrders, error } = await supabaseAdmin
       .from('orders')
       .select('id, tracking_number, shipped_at, user_id')
       .eq('status', 'shipped')
+      .gte('shipped_at', twentyFourHoursAgo.toISOString()) // Only orders shipped in last 24 hours
       .order('shipped_at', { ascending: false })
       .limit(10) // Only process last 10 shipped orders
 

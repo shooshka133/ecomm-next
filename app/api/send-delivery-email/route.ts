@@ -17,7 +17,7 @@ const supabaseAdmin = createClient(
  */
 export async function POST(request: NextRequest) {
   try {
-    const { orderId } = await request.json()
+    const { orderId, force } = await request.json()
 
     if (!orderId) {
       return NextResponse.json({ error: 'orderId required' }, { status: 400 })
@@ -53,6 +53,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Prevent duplicate emails: Only send if order was delivered recently (within last 24 hours)
+    // This prevents accidentally sending emails to old orders that already received delivery notifications
+    // If you need to send to older orders, you can manually call this endpoint with force=true parameter
+    if (!force && order.delivered_at) {
+      const deliveredDate = new Date(order.delivered_at)
+      const twentyFourHoursAgo = new Date()
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
+      
+      if (deliveredDate < twentyFourHoursAgo) {
+        console.warn('⚠️ [Delivery Email] Order was delivered more than 24 hours ago. Use force=true to send anyway.')
+        return NextResponse.json({ 
+          error: 'Order was delivered more than 24 hours ago. Email was likely already sent. Add "force": true to the request body if you need to resend.',
+          deliveredAt: order.delivered_at,
+          hint: 'To force send, include "force": true in the request body'
+        }, { status: 400 })
+      }
+    }
+
     console.log('✅ [Delivery Email] Order found:', order.id)
     console.log('✅ [Delivery Email] Tracking number:', order.tracking_number)
 
@@ -75,6 +93,15 @@ export async function POST(request: NextRequest) {
     const customerName = userData?.full_name || customerEmail
 
     console.log('📧 [Delivery Email] Sending to:', customerEmail)
+
+    // Get order URL (fallback to production URL)
+    // In production, always use production URL (even if localhost is detected)
+    // In development, keep localhost for local testing
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+    const isProduction = process.env.NODE_ENV === 'production'
+    const orderUrl = (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && isProduction
+      ? 'https://store.shooshka.online'
+      : baseUrl
 
     // Get delivered date
     const deliveredDate = order.delivered_at ? new Date(order.delivered_at) : new Date()
@@ -100,6 +127,8 @@ export async function POST(request: NextRequest) {
       }),
       orderItems: emailOrderItems,
       total: order.total,
+      orderUrl,
+      orderId: order.id, // Pass orderId to link directly to this order
     })
 
     if (result.success) {

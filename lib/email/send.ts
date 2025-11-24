@@ -51,6 +51,8 @@ export interface DeliveryEmailData {
     image_url?: string
   }>
   total: number
+  orderUrl?: string
+  orderId?: string
 }
 
 /**
