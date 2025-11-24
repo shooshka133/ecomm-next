@@ -80,9 +80,9 @@ export default function Navbar() {
       setCartCount(0)
       setIsAdmin(null)
     }
-  }, [user, supabase, loadCartCount])
+  }, [user, supabase, loadCartCount, checkAdminStatus])
 
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     if (!user) {
       setIsAdmin(null)
       return
@@ -99,7 +99,7 @@ export default function Navbar() {
     } catch (error) {
       setIsAdmin(false)
     }
-  }
+  }, [user])
 
   // Listen for custom events from other components
   useEffect(() => {

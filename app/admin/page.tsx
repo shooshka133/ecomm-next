@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import {
@@ -58,18 +58,36 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [checkingAdmin, setCheckingAdmin] = useState(true)
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth?next=/admin')
-      return
+  const loadStats = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error)
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
-    if (user) {
-      checkAdminStatus()
+  const loadOrders = useCallback(async () => {
+    setOrdersLoading(true)
+    try {
+      const response = await fetch('/api/list-all-orders')
+      if (response.ok) {
+        const data = await response.json()
+        setOrders(data.orders || [])
+      }
+    } catch (error) {
+      console.error('Error loading orders:', error)
+    } finally {
+      setOrdersLoading(false)
     }
-  }, [user, authLoading, router])
+  }, [])
 
-  const checkAdminStatus = async () => {
+  const checkAdminStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/check')
       if (response.ok) {
@@ -89,36 +107,18 @@ export default function AdminPage() {
       setCheckingAdmin(false)
       setLoading(false)
     }
-  }
+  }, [loadStats, loadOrders])
 
-  const loadStats = async () => {
-    try {
-      const response = await fetch('/api/admin/stats')
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
-    } catch (error) {
-      console.error('Error loading stats:', error)
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth?next=/admin')
+      return
     }
-  }
 
-  const loadOrders = async () => {
-    setOrdersLoading(true)
-    try {
-      const response = await fetch('/api/list-all-orders')
-      if (response.ok) {
-        const data = await response.json()
-        setOrders(data.orders || [])
-      }
-    } catch (error) {
-      console.error('Error loading orders:', error)
-    } finally {
-      setOrdersLoading(false)
+    if (user) {
+      checkAdminStatus()
     }
-  }
+  }, [user, authLoading, router, checkAdminStatus])
 
   const loadOrderDetails = async (orderId: string) => {
     try {
@@ -210,7 +210,7 @@ export default function AdminPage() {
         <div className="bg-white rounded-xl shadow-md p-8 border border-red-200">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
           <p className="text-gray-700 mb-4">
-            You don't have permission to access the admin dashboard. Admin access is required.
+            You don&apos;t have permission to access the admin dashboard. Admin access is required.
           </p>
           <Link
             href="/"
