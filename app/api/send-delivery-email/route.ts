@@ -97,11 +97,21 @@ export async function POST(request: NextRequest) {
     // Get order URL (fallback to production URL)
     // In production, always use production URL (even if localhost is detected)
     // In development, keep localhost for local testing
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
     const isProduction = process.env.NODE_ENV === 'production'
+    
+    // Ensure baseUrl doesn't have trailing slash
+    baseUrl = baseUrl.replace(/\/$/, '')
+    
+    // In production, replace localhost with production URL
     const orderUrl = (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) && isProduction
       ? 'https://store.shooshka.online'
       : baseUrl
+    
+    // Log the URL for debugging
+    console.log('📧 [Delivery Email] Order URL:', orderUrl)
+    console.log('📧 [Delivery Email] Order ID:', order.id)
+    console.log('📧 [Delivery Email] Final URL will be:', `${orderUrl}/orders?orderId=${order.id}`)
 
     // Get delivered date
     const deliveredDate = order.delivered_at ? new Date(order.delivered_at) : new Date()

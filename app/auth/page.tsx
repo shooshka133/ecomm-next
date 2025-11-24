@@ -207,8 +207,9 @@ export default function AuthPage() {
           setMessageType('success')
           setMessage('Check your email to confirm your account! After confirmation, you can sign in.')
         } else if (data.session) {
-          // Auto-confirmed, redirect immediately
-          router.push('/')
+          // Auto-confirmed, redirect to next URL or home
+          const next = searchParams.get('next') || '/'
+          router.push(next)
           router.refresh()
         }
       } else {
@@ -227,7 +228,9 @@ export default function AuthPage() {
           throw error
         }
         if (data.session) {
-          router.push('/')
+          // Redirect to next URL or home
+          const next = searchParams.get('next') || '/'
+          router.push(next)
           router.refresh()
         }
       }

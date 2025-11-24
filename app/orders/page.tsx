@@ -31,14 +31,23 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/auth");
+      // Preserve orderId query parameter when redirecting to auth
+      const orderIdFromUrl = searchParams.get('orderId');
+      if (orderIdFromUrl) {
+        // Encode the full orders URL with orderId as the next parameter
+        const ordersUrlWithOrderId = `/orders?orderId=${encodeURIComponent(orderIdFromUrl)}`;
+        const redirectUrl = `/auth?next=${encodeURIComponent(ordersUrlWithOrderId)}`;
+        router.push(redirectUrl);
+      } else {
+        router.push('/auth');
+      }
       return;
     }
 
     if (user) {
       loadOrders();
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, searchParams]);
 
   // Auto-expand order if orderId is in URL
   useEffect(() => {

@@ -32,10 +32,16 @@ export default function ShippingNotificationEmail({
 }: ShippingNotificationEmailProps) {
   // Use provided orderUrl or fallback to production URL, then append /orders path
   // If orderId is provided, add it as a query parameter to auto-expand the order
-  const baseUrl = orderUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
-  // Ensure /orders is always appended
-  const ordersPageUrl = `${baseUrl}/orders`
-  const orderPageUrl = orderId ? `${ordersPageUrl}?orderId=${orderId}` : ordersPageUrl
+  let baseUrl = orderUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://store.shooshka.online'
+  
+  // Ensure baseUrl doesn't have trailing slash
+  baseUrl = baseUrl.replace(/\/$/, '')
+  
+  // Ensure /orders is always appended (not already in baseUrl)
+  const ordersPageUrl = baseUrl.includes('/orders') ? baseUrl : `${baseUrl}/orders`
+  
+  // Construct final URL with orderId query parameter
+  const orderPageUrl = orderId ? `${ordersPageUrl}?orderId=${encodeURIComponent(orderId)}` : ordersPageUrl
   return (
     <Html>
       <Head />
