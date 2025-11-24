@@ -156,6 +156,31 @@ export default function AdminPage() {
     }
   }
 
+  const sendOrderEmail = async (orderId: string, emailType: 'shipping' | 'delivery') => {
+    try {
+      const endpoint = emailType === 'shipping' 
+        ? '/api/send-shipping-email'
+        : '/api/send-delivery-email'
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        alert(`${emailType === 'shipping' ? 'Shipping' : 'Delivery'} email sent successfully!`)
+      } else {
+        alert(`Error: ${data.error || 'Failed to send email'}`)
+      }
+    } catch (error: any) {
+      console.error('Error sending email:', error)
+      alert(`Error: ${error.message}`)
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -382,6 +407,9 @@ export default function AdminPage() {
                     </div>
                     <p className="text-sm text-gray-600">{order.userEmail}</p>
                     <p className="text-sm font-semibold text-gray-900 mt-1">${Number(order.total).toFixed(2)}</p>
+                    <p className="text-xs text-gray-500 mt-1 font-mono bg-gray-50 px-2 py-1 rounded">
+                      ID: {order.orderId}
+                    </p>
                     <p className="text-xs text-gray-500 mt-1">
                       {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString()}
                     </p>
@@ -428,42 +456,83 @@ export default function AdminPage() {
                       </div>
                     )}
 
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <button
-                        onClick={() => updateOrderStatus(order.orderId, 'processing')}
-                        disabled={order.status === 'processing'}
-                        className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Mark Processing
-                      </button>
-                      <button
-                        onClick={() => {
-                          const tracking = prompt('Enter tracking number (optional):')
-                          updateOrderStatus(order.orderId, 'shipped', tracking || undefined)
-                        }}
-                        disabled={order.status === 'shipped' || order.status === 'delivered'}
-                        className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Mark Shipped
-                      </button>
-                      <button
-                        onClick={() => updateOrderStatus(order.orderId, 'delivered')}
-                        disabled={order.status === 'delivered'}
-                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Mark Delivered
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to cancel this order?')) {
-                            updateOrderStatus(order.orderId, 'cancelled')
-                          }
-                        }}
-                        disabled={order.status === 'cancelled' || order.status === 'delivered'}
-                        className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Cancel Order
-                      </button>
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Order Actions:</h4>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <button
+                          onClick={() => updateOrderStatus(order.orderId, 'processing')}
+                          disabled={order.status === 'processing'}
+                          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Mark Processing
+                        </button>
+                        <button
+                          onClick={() => {
+                            const tracking = prompt('Enter tracking number (optional):')
+                            updateOrderStatus(order.orderId, 'shipped', tracking || undefined)
+                          }}
+                          disabled={order.status === 'shipped' || order.status === 'delivered'}
+                          className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Mark Shipped
+                        </button>
+                        <button
+                          onClick={() => updateOrderStatus(order.orderId, 'delivered')}
+                          disabled={order.status === 'delivered'}
+                          className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Mark Delivered
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('Are you sure you want to cancel this order?')) {
+                              updateOrderStatus(order.orderId, 'cancelled')
+                            }
+                          }}
+                          disabled={order.status === 'cancelled' || order.status === 'delivered'}
+                          className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Cancel Order
+                        </button>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
+                        <button
+                          onClick={() => {
+                            if (order.status !== 'shipped') {
+                              alert('Order must be marked as "shipped" before sending shipping email')
+                              return
+                            }
+                            if (confirm('Send shipping notification email to customer?')) {
+                              sendOrderEmail(order.orderId, 'shipping')
+                            }
+                          }}
+                          disabled={order.status !== 'shipped'}
+                          className="px-3 py-1.5 text-sm bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                          <Mail className="w-4 h-4" />
+                          Send Shipping Email
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (order.status !== 'delivered') {
+                              alert('Order must be marked as "delivered" before sending delivery email')
+                              return
+                            }
+                            if (confirm('Send delivery confirmation email to customer?')) {
+                              sendOrderEmail(order.orderId, 'delivery')
+                            }
+                          }}
+                          disabled={order.status !== 'delivered'}
+                          className="px-3 py-1.5 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                          <Mail className="w-4 h-4" />
+                          Send Delivery Email
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        💡 Tip: Update order status first, then send the corresponding email
+                      </p>
                     </div>
                   </div>
                 )}
