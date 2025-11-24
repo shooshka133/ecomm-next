@@ -7,7 +7,8 @@ export async function middleware(req: NextRequest) {
   // Protect only /orders (or other private pages)
   const isProtected = pathname.startsWith('/orders') || 
                       pathname.startsWith('/cart') || 
-                      pathname.startsWith('/checkout')
+                      pathname.startsWith('/checkout') ||
+                      pathname.startsWith('/admin')
 
   if (isProtected) {
     // Check for Supabase session
@@ -36,6 +37,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/cart/:path*', '/checkout/:path*', '/orders/:path*'],
+  matcher: ['/cart/:path*', '/checkout/:path*', '/orders/:path*', '/admin/:path*'],
 }
 

@@ -12,6 +12,7 @@ export default function Navbar() {
   const router = useRouter()
   const [cartCount, setCartCount] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const supabase = createSupabaseClient()
 
   const loadCartCount = useCallback(async () => {
@@ -41,6 +42,7 @@ export default function Navbar() {
   useEffect(() => {
     if (user) {
       loadCartCount()
+      checkAdminStatus()
       
       // Subscribe to cart changes with proper cleanup
       const channel = supabase
@@ -76,8 +78,28 @@ export default function Navbar() {
       }
     } else {
       setCartCount(0)
+      setIsAdmin(null)
     }
   }, [user, supabase, loadCartCount])
+
+  const checkAdminStatus = async () => {
+    if (!user) {
+      setIsAdmin(null)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/check')
+      if (response.ok) {
+        const data = await response.json()
+        setIsAdmin(data.isAdmin)
+      } else {
+        setIsAdmin(false)
+      }
+    } catch (error) {
+      setIsAdmin(false)
+    }
+  }
 
   // Listen for custom events from other components
   useEffect(() => {
@@ -164,6 +186,14 @@ export default function Navbar() {
                 >
                   Profile
                 </Link>
+                {isAdmin === true && (
+                  <Link 
+                    href="/admin" 
+                    className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-orange-100 to-amber-100 hover:from-orange-600 hover:to-amber-600 hover:shadow-lg hover:scale-105 hover:rotate-1 transform shadow-sm"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <div className="flex items-center gap-3 pl-4 border-l border-gray-200 flex-shrink-0">
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ring-2 ring-white">
@@ -248,6 +278,15 @@ export default function Navbar() {
                   >
                     Profile
                   </Link>
+                  {isAdmin === true && (
+                    <Link 
+                      href="/admin" 
+                      className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-orange-100 to-amber-100 active:from-orange-600 active:to-amber-600 active:scale-95 transition-all transform shadow-sm"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Admin
+                    </Link>
+                  )}
                   <div className="pt-3 mt-3 border-t border-gray-200">
                     <button
                       onClick={handleSignOut}

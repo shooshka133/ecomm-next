@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { isAdmin } from '@/lib/admin/check'
 
 // Use service role key for admin access
 const supabaseAdmin = createClient(
@@ -13,6 +16,19 @@ const supabaseAdmin = createClient(
  */
 export async function GET(request: NextRequest) {
   try {
+    // Check if user is authenticated and is admin
+    const supabase = createServerComponentClient({ cookies })
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userIsAdmin = await isAdmin(user.id)
+    if (!userIsAdmin) {
+      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const emailFilter = searchParams.get('email')
 
