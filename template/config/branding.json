@@ -1,0 +1,14 @@
+{
+  "storeName": "Ecommerce Start",
+  "storeSlogan": "Your trusted destination for quality products and exceptional service.",
+  "logoUrl": "/icon.svg",
+  "faviconUrl": "/icon.svg",
+  "appleIconUrl": "/apple-icon.svg",
+  "primaryColor": "#4F46E5",
+  "secondaryColor": "#7C3AED",
+  "supportEmail": "support@example.com",
+  "footerText": "© 2024 Ecommerce Start. All rights reserved.",
+  "metaTitle": "Ecommerce Start - Modern Shopping Experience",
+  "metaDescription": "Discover amazing products at great prices"
+}
+

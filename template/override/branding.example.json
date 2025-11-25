@@ -1,0 +1,15 @@
+{
+  "_comment": "Copy this file to branding.json and customize your store",
+  "storeName": "My Awesome Store",
+  "storeSlogan": "Your custom slogan here",
+  "logoUrl": "/icon.svg",
+  "faviconUrl": "/icon.svg",
+  "appleIconUrl": "/apple-icon.svg",
+  "primaryColor": "#FF6B6B",
+  "secondaryColor": "#4ECDC4",
+  "supportEmail": "hello@mystore.com",
+  "footerText": "© 2024 My Awesome Store. All rights reserved.",
+  "metaTitle": "My Awesome Store - Shop the Best Products",
+  "metaDescription": "Discover amazing products at unbeatable prices"
+}
+

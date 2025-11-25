@@ -9,6 +9,15 @@
   --primary-dark: #4f46e5;
   --secondary: #8b5cf6;
   --accent: #ec4899;
+  
+  /* Brand CSS Variables - Dynamically set from brand.config.ts */
+  --brand-primary: #4F46E5;
+  --brand-accent: #7C3AED;
+  --brand-secondary: #6366F1;
+  --brand-background: #F9FAFB;
+  --brand-text: #111827;
+  --brand-font-primary: Inter, sans-serif;
+  --brand-font-heading: Poppins, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

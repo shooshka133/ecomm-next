@@ -1,0 +1,25 @@
+{
+  "migrations": [
+    "supabase-schema.sql",
+    "supabase-user-profiles.sql",
+    "supabase-order-tracking.sql",
+    "supabase-admin-role.sql",
+    "supabase-wishlist.sql"
+  ],
+  "requiredTables": [
+    "products",
+    "cart_items",
+    "orders",
+    "order_items",
+    "user_profiles",
+    "user_addresses",
+    "wishlist"
+  ],
+  "requiredPolicies": [
+    "Products are viewable by everyone",
+    "Users can view their own cart",
+    "Users can view their own orders",
+    "Admins can view all orders"
+  ]
+}
+

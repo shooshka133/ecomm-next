@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
+import { getBrandName, getLogoUrl } from '@/lib/brand'
 
 export default function Navbar() {
   const { user, loading, signOut } = useAuth()
@@ -15,6 +16,15 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const supabase = createSupabaseClient()
+  
+  // Get brand configuration
+  const brandName = getBrandName()
+  const logoUrl = getLogoUrl()
+  
+  // Split brand name for display (first word + rest)
+  const brandNameParts = brandName.split(' ')
+  const brandFirstWord = brandNameParts[0] || 'Ecommerce'
+  const brandRest = brandNameParts.slice(1).join(' ') || 'Start'
 
   const loadCartCount = useCallback(async () => {
     if (!user) {
@@ -125,16 +135,22 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3 gap-4">
           <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-md">
-              <span className="text-white font-bold text-lg font-poppins">E</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-md overflow-hidden">
+              {logoUrl && logoUrl !== '/icon.svg' ? (
+                <img src={logoUrl} alt={brandName} className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-white font-bold text-lg font-poppins">{brandFirstWord.charAt(0)}</span>
+              )}
             </div>
             <div className="hidden sm:block">
               <span className="text-xl font-poppins font-bold gradient-text tracking-tight">
-                Ecommerce
+                {brandFirstWord}
               </span>
-              <span className="text-xl font-poppins font-light text-gray-600 ml-1">
-                Start
-              </span>
+              {brandRest && (
+                <span className="text-xl font-poppins font-light text-gray-600 ml-1">
+                  {brandRest}
+                </span>
+              )}
             </div>
           </Link>
           

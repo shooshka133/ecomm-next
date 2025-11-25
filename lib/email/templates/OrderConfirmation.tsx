@@ -42,6 +42,9 @@ export default function OrderConfirmationEmail({
   estimatedDelivery,
   orderUrl,
   orderId,
+  brandName = 'E-Commerce Store',
+  contactEmail = 'support@example.com',
+  primaryColor = '#4F46E5',
 }: OrderConfirmationEmailProps) {
   // Use provided orderUrl or fallback to production URL, then append /orders path
   // If orderId is provided, add it as a query parameter to auto-expand the order
@@ -64,7 +67,7 @@ export default function OrderConfirmationEmail({
         <Container style={container}>
           {/* Header */}
           <Section style={header}>
-            <Heading style={heading}>Ecommerce Start</Heading>
+            <Heading style={{ ...heading, color: primaryColor }}>{brandName}</Heading>
             <Text style={tagline}>Thank you for your order!</Text>
           </Section>
 
@@ -107,7 +110,7 @@ export default function OrderConfirmationEmail({
                 <Text style={totalLabel}>Total</Text>
               </Column>
               <Column style={itemPriceColumn}>
-                <Text style={totalAmount}>${total.toFixed(2)}</Text>
+                <Text style={{ ...totalAmount, color: primaryColor }}>${total.toFixed(2)}</Text>
               </Column>
             </Row>
           </Section>
@@ -116,7 +119,7 @@ export default function OrderConfirmationEmail({
           {trackingNumber && (
             <Section style={trackingBox}>
               <Text style={trackingLabel}>Tracking Number</Text>
-              <Text style={trackingNumberStyle}>{trackingNumber}</Text>
+              <Text style={{ ...trackingNumberStyle, color: primaryColor }}>{trackingNumber}</Text>
               {estimatedDelivery && (
                 <Text style={estimatedText}>
                   Estimated Delivery: {estimatedDelivery}
@@ -130,7 +133,7 @@ export default function OrderConfirmationEmail({
             <Text style={text}>
               You can track your order status anytime by visiting your orders page.
             </Text>
-            <Button style={button} href={orderPageUrl}>
+            <Button style={{ ...button, backgroundColor: primaryColor }} href={orderPageUrl}>
               View Order Details
             </Button>
           </Section>
@@ -141,11 +144,11 @@ export default function OrderConfirmationEmail({
               Questions about your order?
             </Text>
             <Text style={footerText}>
-              Reply to this email or contact us at support@ecommercestart.com
+              Reply to this email or contact us at {contactEmail}
             </Text>
             <Hr style={footerDivider} />
             <Text style={footerSmall}>
-              © {new Date().getFullYear()} Ecommerce Start. All rights reserved.
+              © {new Date().getFullYear()} {brandName}. All rights reserved.
             </Text>
           </Section>
         </Container>
@@ -284,7 +287,7 @@ const totalLabel = {
 const totalAmount = {
   fontSize: '24px',
   fontWeight: 'bold',
-  color: '#4F46E5',
+  color: '#4F46E5', // Will be overridden by inline style
   margin: '0',
 }
 
@@ -305,7 +308,7 @@ const trackingLabel = {
 const trackingNumberStyle = {
   fontSize: '20px',
   fontWeight: 'bold',
-  color: '#4F46E5',
+  color: '#4F46E5', // Will be overridden by inline style
   margin: '0 0 8px',
   letterSpacing: '0.5px',
 }
@@ -317,7 +320,7 @@ const estimatedText = {
 }
 
 const button = {
-  backgroundColor: '#4F46E5',
+  backgroundColor: '#4F46E5', // Will be overridden by inline style
   borderRadius: '8px',
   color: '#ffffff',
   fontSize: '16px',

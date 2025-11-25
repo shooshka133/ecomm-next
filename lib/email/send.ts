@@ -4,12 +4,17 @@ import { render } from '@react-email/render'
 import OrderConfirmationEmail from './templates/OrderConfirmation'
 import ShippingNotificationEmail from './templates/ShippingNotification'
 import DeliveryNotificationEmail from './templates/DeliveryNotification'
+import { getBrandName, getContactEmail } from '@/lib/brand'
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-// From email address
+// From email address (with brand name)
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+const getFromEmailWithBrand = () => {
+  const brandName = getBrandName()
+  return `${brandName} <${FROM_EMAIL}>`
+}
 
 export interface OrderEmailData {
   orderNumber: string
@@ -81,19 +86,28 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
       console.warn('⚠️  [Email] RESEND_FROM_EMAIL not set or using default. Using:', FROM_EMAIL)
     }
 
+    const fromEmail = getFromEmailWithBrand()
     console.log(`📧 Sending order confirmation email to ${data.customerEmail}`)
-    console.log('📧 From:', `Ecommerce Start <${FROM_EMAIL}>`)
+    console.log('📧 From:', fromEmail)
     console.log('📧 Subject:', `Order Confirmation #${data.orderNumber} - Thank You!`)
 
     // Render React email component to HTML
     console.log('🔍 [Email] Rendering email template...')
-    const emailHtml = await render(React.createElement(OrderConfirmationEmail, data))
+    const brandName = getBrandName()
+    const contactEmail = getContactEmail()
+    const primaryColor = getPrimaryColor()
+    const emailHtml = await render(React.createElement(OrderConfirmationEmail, {
+      ...data,
+      brandName,
+      contactEmail,
+      primaryColor,
+    }))
     console.log('✅ [Email] Template rendered successfully')
     console.log('🔍 [Email] HTML type:', typeof emailHtml)
     console.log('🔍 [Email] HTML length:', emailHtml?.length || 0)
 
     const { data: emailData, error } = await resend.emails.send({
-      from: `Ecommerce Start <${FROM_EMAIL}>`,
+      from: getFromEmailWithBrand(),
       to: [data.customerEmail],
       subject: `Order Confirmation #${data.orderNumber} - Thank You!`,
       html: emailHtml,
@@ -151,7 +165,7 @@ export async function sendShippingNotificationEmail(data: ShippingEmailData) {
     }))
 
     const { data: emailData, error } = await resend.emails.send({
-      from: `Ecommerce Start <${FROM_EMAIL}>`,
+      from: getFromEmailWithBrand(),
       to: [data.customerEmail],
       subject: `Your Order #${data.orderNumber} Has Shipped! 📦`,
       html: emailHtml,
@@ -191,7 +205,7 @@ export async function sendDeliveryNotificationEmail(data: DeliveryEmailData) {
     console.log('✅ [Email] Template rendered successfully')
 
     const { data: emailData, error } = await resend.emails.send({
-      from: `Ecommerce Start <${FROM_EMAIL}>`,
+      from: getFromEmailWithBrand(),
       to: [data.customerEmail],
       subject: `Your Order #${data.orderNumber} Has Been Delivered! 🎉`,
       html: emailHtml,

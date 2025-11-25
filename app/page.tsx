@@ -12,6 +12,7 @@ import { Sparkles, Truck, Shield, Star, TrendingUp } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Product } from "@/types";
 import { useSearchParams, useRouter } from "next/navigation";
+import { getHeroTitle, getHeroSubtitle, getHeroCtaText, getHeroBadge, getFeatureStats } from "@/lib/brand";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -22,6 +23,13 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 24; // Increased from 12 to show more products
   const supabase = createSupabaseClient();
+  
+  // Get brand hero configuration
+  const heroTitle = getHeroTitle();
+  const heroSubtitle = getHeroSubtitle();
+  const heroCtaText = getHeroCtaText();
+  const heroBadge = getHeroBadge();
+  const featureStats = getFeatureStats();
 
   // CRITICAL: Handle OAuth code that wrongly lands on homepage
   // This happens when Supabase redirect URL is misconfigured
@@ -155,22 +163,21 @@ export default function Home() {
                 <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-4 sm:mb-6">
                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="text-xs sm:text-sm font-medium">
-                    Premium Quality Products
+                    {heroBadge}
                   </span>
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent drop-shadow-2xl leading-tight">
-                  Welcome to Ecommerce Start
+                  {heroTitle}
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-blue-100 leading-relaxed drop-shadow-lg">
-                  Discover amazing products at unbeatable prices. Shop the latest
-                  trends and technology with confidence.
+                  {heroSubtitle}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <Link
                     href="#products"
                     className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 inline-flex items-center justify-center gap-2 shadow-2xl hover:shadow-indigo-500/50 transition-all"
                   >
-                    <span>Shop Now</span>
+                    <span>{heroCtaText}</span>
                     <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                   </Link>
                   <Link
@@ -184,15 +191,15 @@ export default function Home() {
                 {/* Stats Bar */}
                 <div className="grid grid-cols-3 gap-3 sm:gap-4 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-white/20">
                   <div>
-                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">500+</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{featureStats.products}</div>
                     <div className="text-xs sm:text-sm text-blue-100">Products</div>
                   </div>
                   <div>
-                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">10K+</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{featureStats.customers}</div>
                     <div className="text-xs sm:text-sm text-blue-100">Customers</div>
                   </div>
                   <div>
-                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">24/7</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{featureStats.support}</div>
                     <div className="text-xs sm:text-sm text-blue-100">Support</div>
                   </div>
                 </div>
@@ -505,19 +512,19 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
-              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">10K+</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.customers}</div>
               <div className="text-sm sm:text-base text-indigo-200">Happy Customers</div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">500+</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.products}</div>
               <div className="text-sm sm:text-base text-indigo-200">Products</div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">50+</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.countries}</div>
               <div className="text-sm sm:text-base text-indigo-200">Countries</div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">24/7</div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.support}</div>
               <div className="text-sm sm:text-base text-indigo-200">Support</div>
             </div>
           </div>

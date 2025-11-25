@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "template:install": "node template/scripts/install-template.js",
+    "template:branding": "node template/scripts/apply-branding.js",
+    "template:sync-env": "node template/scripts/sync-env.js"
   },
   "dependencies": {
     "@react-email/components": "^1.0.1",
