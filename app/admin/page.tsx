@@ -16,6 +16,7 @@ import {
   Settings,
   Eye,
   Edit,
+  Palette,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -263,9 +264,9 @@ export default function AdminPage() {
           </div>
           <Link
             href="/admin/brand-settings"
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors flex items-center gap-2 shadow-md"
           >
-            <Settings className="w-4 h-4" />
+            <Palette className="w-4 h-4" />
             Brand Settings
           </Link>
         </div>
@@ -358,6 +359,13 @@ export default function AdminPage() {
       <div className="bg-white rounded-xl shadow-md p-6 mb-8 border border-gray-100">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-4">
+          <Link
+            href="/admin/brand-settings"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors shadow-md"
+          >
+            <Palette className="w-4 h-4" />
+            <span>Brand Settings</span>
+          </Link>
           <Link
             href="/admin/emails"
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
