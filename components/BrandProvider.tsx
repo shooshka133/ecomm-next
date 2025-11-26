@@ -6,10 +6,11 @@
  * Injects brand CSS variables into the document root.
  * This allows Tailwind and CSS to use brand colors dynamically.
  * 
- * Safe: If brand.config.ts is missing, uses defaults.
+ * Fetches brand config from API based on current domain.
+ * Falls back to static config if API fails.
  */
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { getBrandColors, getPrimaryFont, getHeadingFont } from '@/lib/brand'
 
 // Helper function to convert hex to RGB
@@ -25,12 +26,30 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 }
 
 export default function BrandProvider({ children }: { children: React.ReactNode }) {
+  const [brandConfig, setBrandConfig] = useState<any>(null)
+
+  useEffect(() => {
+    // Try to fetch domain-based brand config
+    fetch('/api/brand-config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.brand) {
+          setBrandConfig(data.brand)
+        }
+      })
+      .catch(error => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Failed to load domain-based brand, using static config:', error)
+        }
+      })
+  }, [])
+
   useEffect(() => {
     try {
-      // Get brand configuration
-      const colors = getBrandColors()
-      const primaryFont = getPrimaryFont()
-      const headingFont = getHeadingFont()
+      // Use domain-based brand if available, otherwise fall back to static
+      const colors = brandConfig?.colors || getBrandColors()
+      const primaryFont = brandConfig?.fontFamily?.primary || getPrimaryFont()
+      const headingFont = brandConfig?.fontFamily?.heading || getHeadingFont()
       
       // Set CSS variables on document root
       const root = document.documentElement
@@ -67,7 +86,7 @@ export default function BrandProvider({ children }: { children: React.ReactNode 
         console.warn('Brand configuration not available, using defaults:', error)
       }
     }
-  }, [])
+  }, [brandConfig])
 
   return <>{children}</>
 }

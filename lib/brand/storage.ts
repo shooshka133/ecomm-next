@@ -37,6 +37,7 @@ export interface BrandData {
   slug: string
   name: string
   is_active: boolean
+  domain?: string
   config: typeof brand
   asset_urls?: {
     logo?: string
@@ -78,6 +79,7 @@ export async function getAllBrands(): Promise<BrandData[]> {
             slug: b.slug,
             name: b.name,
             is_active: b.is_active,
+            domain: b.domain,
             config: b.config,
             asset_urls: b.asset_urls || {},
             created_at: b.created_at,
@@ -117,9 +119,66 @@ export async function getAllBrands(): Promise<BrandData[]> {
 }
 
 /**
- * Get active brand
+ * Get brand by domain
  */
-export async function getActiveBrand(): Promise<BrandData | null> {
+export async function getBrandByDomain(domain: string): Promise<BrandData | null> {
+  if (USE_DB) {
+    const supabase = getSupabaseAdmin()
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('brands')
+          .select('*')
+          .eq('domain', domain)
+          .single()
+        
+        if (!error && data) {
+          return {
+            id: data.id,
+            slug: data.slug,
+            name: data.name,
+            is_active: data.is_active,
+            domain: data.domain,
+            config: data.config,
+            asset_urls: data.asset_urls || {},
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            created_by: data.created_by,
+            updated_by: data.updated_by,
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching brand by domain from DB:', error)
+      }
+    }
+  }
+
+  // Fallback to file-based
+  try {
+    const brands = await getAllBrands()
+    const brand = brands.find(b => b.domain === domain)
+    if (brand) return brand
+  } catch (error) {
+    console.error('Error finding brand by domain:', error)
+  }
+
+  return null
+}
+
+/**
+ * Get active brand (optionally filtered by domain)
+ * If domain is provided, tries to find brand by domain first, then falls back to active brand
+ */
+export async function getActiveBrand(domain?: string): Promise<BrandData | null> {
+  // If domain is provided, try to get brand by domain first
+  if (domain) {
+    const domainBrand = await getBrandByDomain(domain)
+    if (domainBrand) {
+      return domainBrand
+    }
+  }
+
+  // Fallback to active brand (original behavior)
   if (USE_DB) {
     const supabase = getSupabaseAdmin()
     if (supabase) {
@@ -136,6 +195,7 @@ export async function getActiveBrand(): Promise<BrandData | null> {
             slug: data.slug,
             name: data.name,
             is_active: data.is_active,
+            domain: data.domain,
             config: data.config,
             asset_urls: data.asset_urls || {},
             created_at: data.created_at,
@@ -189,6 +249,7 @@ export async function getBrandById(idOrSlug: string): Promise<BrandData | null> 
             slug: data.slug,
             name: data.name,
             is_active: data.is_active,
+            domain: data.domain,
             config: data.config,
             asset_urls: data.asset_urls || {},
             created_at: data.created_at,
@@ -231,6 +292,7 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
             slug: brandData.slug,
             name: brandData.name,
             is_active: brandData.is_active,
+            domain: brandData.domain,
             config: brandData.config,
             asset_urls: brandData.asset_urls || {},
             updated_by: userId,
@@ -245,6 +307,7 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
             slug: data.slug,
             name: data.name,
             is_active: data.is_active,
+            domain: data.domain,
             config: data.config,
             asset_urls: data.asset_urls || {},
             created_at: data.created_at,
@@ -265,6 +328,7 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
             slug: brandData.slug,
             name: brandData.name,
             is_active: brandData.is_active,
+            domain: brandData.domain,
             config: brandData.config,
             asset_urls: brandData.asset_urls || {},
             created_by: userId,
@@ -279,6 +343,7 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
             slug: data.slug,
             name: data.name,
             is_active: data.is_active,
+            domain: data.domain,
             config: data.config,
             asset_urls: data.asset_urls || {},
             created_at: data.created_at,
@@ -350,12 +415,13 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
             const { data, error: dbError } = await supabase
               .from('brands')
               .update({
-                slug: brandData.slug,
-                name: brandData.name,
-                is_active: brandData.is_active,
-                config: brandData.config,
-                asset_urls: brandData.asset_urls || {},
-                updated_by: userId,
+            slug: brandData.slug,
+            name: brandData.name,
+            is_active: brandData.is_active,
+            domain: brandData.domain,
+            config: brandData.config,
+            asset_urls: brandData.asset_urls || {},
+            updated_by: userId,
               })
               .eq('id', brandData.id)
               .select()
@@ -379,13 +445,14 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
             const { data, error: dbError } = await supabase
               .from('brands')
               .insert({
-                slug: brandData.slug,
-                name: brandData.name,
-                is_active: brandData.is_active,
-                config: brandData.config,
-                asset_urls: brandData.asset_urls || {},
-                created_by: userId,
-                updated_by: userId,
+            slug: brandData.slug,
+            name: brandData.name,
+            is_active: brandData.is_active,
+            domain: brandData.domain,
+            config: brandData.config,
+            asset_urls: brandData.asset_urls || {},
+            created_by: userId,
+            updated_by: userId,
               })
               .select()
               .single()

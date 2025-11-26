@@ -13,12 +13,38 @@ import { getActiveBrand } from './storage'
 import { brand } from '@/brand.config'
 
 /**
+ * Get domain from request headers
+ */
+export function getDomainFromRequest(headers: Headers): string | undefined {
+  // Try host header first (most reliable)
+  const host = headers.get('host') || headers.get('x-forwarded-host')
+  if (host) {
+    // Remove port if present
+    return host.split(':')[0]
+  }
+  
+  // Fallback to referer if available
+  const referer = headers.get('referer')
+  if (referer) {
+    try {
+      const url = new URL(referer)
+      return url.hostname
+    } catch {
+      // Invalid URL, ignore
+    }
+  }
+  
+  return undefined
+}
+
+/**
  * Get active brand configuration
  * Falls back to brand.config.ts if no active brand found
+ * @param domain Optional domain to match brand by domain first
  */
-export async function getActiveBrandConfig() {
+export async function getActiveBrandConfig(domain?: string) {
   try {
-    const activeBrand = await getActiveBrand()
+    const activeBrand = await getActiveBrand(domain)
     if (activeBrand && activeBrand.config) {
       return activeBrand.config
     }
@@ -32,10 +58,11 @@ export async function getActiveBrandConfig() {
 
 /**
  * Get active brand with metadata (id, slug, etc.)
+ * @param domain Optional domain to match brand by domain first
  */
-export async function getActiveBrandWithMetadata() {
+export async function getActiveBrandWithMetadata(domain?: string) {
   try {
-    const activeBrand = await getActiveBrand()
+    const activeBrand = await getActiveBrand(domain)
     if (activeBrand) {
       return activeBrand
     }

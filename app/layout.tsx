@@ -7,6 +7,8 @@ import Navbar from '@/components/Navbar'
 import ToastWrapper from '@/components/ToastWrapper'
 import Link from 'next/link'
 import { getBrandName, getBrandSlogan, getSeoTitle, getSeoDescription, getLogoUrl, getFaviconUrl, getAppleIconUrl, getPrimaryColor, getFooterCopyright, getFooterLinks, getSocialLinks, getBrandColors } from '@/lib/brand'
+import { getActiveBrandConfig, getDomainFromRequest } from '@/lib/brand/admin-loader'
+import { headers } from 'next/headers'
 
 const inter = Inter({ subsets: ['latin'] })
 const poppins = Poppins({ 
@@ -15,41 +17,58 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
-// Get brand metadata (with fallbacks)
-const brandName = getBrandName()
-const seoTitle = getSeoTitle()
-const seoDescription = getSeoDescription()
-const logoUrl = getLogoUrl()
-const faviconUrl = getFaviconUrl()
-const appleIconUrl = getAppleIconUrl()
-const primaryColor = getPrimaryColor()
-
-export const metadata: Metadata = {
-  title: seoTitle,
-  description: seoDescription,
-  icons: {
-    icon: faviconUrl,
-    shortcut: faviconUrl,
-    apple: appleIconUrl,
-  },
+// Generate metadata based on domain
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers()
+  const domain = getDomainFromRequest(headersList)
+  
+  try {
+    const brandConfig = await getActiveBrandConfig(domain)
+    return {
+      title: brandConfig.seo?.title || getSeoTitle(),
+      description: brandConfig.seo?.description || getSeoDescription(),
+      icons: {
+        icon: brandConfig.faviconUrl || getFaviconUrl(),
+        shortcut: brandConfig.faviconUrl || getFaviconUrl(),
+        apple: brandConfig.appleIconUrl || getAppleIconUrl(),
+      },
+    }
+  } catch (error) {
+    // Fallback to static config
+    return {
+      title: getSeoTitle(),
+      description: getSeoDescription(),
+      icons: {
+        icon: getFaviconUrl(),
+        shortcut: getFaviconUrl(),
+        apple: getAppleIconUrl(),
+      },
+    }
+  }
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: primaryColor,
+  themeColor: getPrimaryColor(),
 }
 
-// Footer component with brand configuration
-function Footer() {
-  const brandName = getBrandName()
-  const brandSlogan = getBrandSlogan()
-  const footerCopyright = getFooterCopyright()
-  const footerLinks = getFooterLinks()
-  const socialLinks = getSocialLinks()
-  const logoUrl = getLogoUrl()
-  const brandColors = getBrandColors()
+// Footer component with brand configuration (server component - can use async)
+async function Footer() {
+  // Get domain-based brand config
+  const headersList = await headers()
+  const domain = getDomainFromRequest(headersList)
+  const brandConfig = await getActiveBrandConfig(domain)
+  
+  // Use domain-based brand if available, otherwise fall back to static
+  const brandName = brandConfig?.name || getBrandName()
+  const brandSlogan = brandConfig?.slogan || getBrandSlogan()
+  const footerCopyright = brandConfig?.footer?.copyright || getFooterCopyright()
+  const footerLinks = brandConfig?.footer?.links || getFooterLinks()
+  const socialLinks = brandConfig?.social || getSocialLinks()
+  const logoUrl = brandConfig?.logoUrl || getLogoUrl()
+  const brandColors = brandConfig?.colors || getBrandColors()
 
   return (
     <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-20">
