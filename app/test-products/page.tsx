@@ -78,7 +78,7 @@ export default function TestProductsPage() {
       <div className="mt-4 text-sm text-gray-600">
         <p><strong>Expected:</strong></p>
         <ul className="list-disc list-inside ml-4">
-          <li>If on grocery.shooshka.online: brandSlug should be "grocery-store"</li>
+          <li>If on grocery.shooshka.online: brandSlug should be &quot;grocery-store&quot;</li>
           <li>supabaseUrl should be your grocery Supabase project URL</li>
           <li>Should see grocery products (Fresh Produce, Dairy, etc.)</li>
         </ul>
