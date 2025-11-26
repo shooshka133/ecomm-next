@@ -51,6 +51,19 @@ export default function BrandProvider({ children }: { children: React.ReactNode 
       const primaryFont = brandConfig?.fontFamily?.primary || getPrimaryFont()
       const headingFont = brandConfig?.fontFamily?.heading || getHeadingFont()
       
+      // Update document title immediately to prevent flash
+      if (brandConfig?.seo?.title) {
+        document.title = brandConfig.seo.title
+      }
+      
+      // Update favicon if available
+      if (brandConfig?.faviconUrl) {
+        const link = document.querySelector("link[rel='icon']") as HTMLLinkElement
+        if (link) {
+          link.href = brandConfig.faviconUrl
+        }
+      }
+      
       // Set CSS variables on document root
       const root = document.documentElement
       
