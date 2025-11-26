@@ -24,14 +24,29 @@ export default function Home() {
   const productsPerPage = 24; // Increased from 12 to show more products
   const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseClient> | null>(null);
   const [supabaseReady, setSupabaseReady] = useState(false);
+  const [brandConfig, setBrandConfig] = useState<any>(null);
   
-  // Get brand hero configuration
-  const heroTitle = getHeroTitle();
-  const heroSubtitle = getHeroSubtitle();
-  const heroCtaText = getHeroCtaText();
-  const heroBadge = getHeroBadge();
-  const featureStats = getFeatureStats();
-  const brandColors = getBrandColors();
+  // Fetch brand config from API (domain-based)
+  useEffect(() => {
+    fetch('/api/brand-config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.brand) {
+          setBrandConfig(data.brand)
+        }
+      })
+      .catch(error => {
+        console.warn('Failed to load brand config, using static:', error)
+      })
+  }, []);
+  
+  // Get brand hero configuration (dynamic or fallback to static)
+  const heroTitle = brandConfig?.hero?.title || getHeroTitle();
+  const heroSubtitle = brandConfig?.hero?.subtitle || getHeroSubtitle();
+  const heroCtaText = brandConfig?.hero?.ctaText || getHeroCtaText();
+  const heroBadge = brandConfig?.hero?.badge || getHeroBadge();
+  const featureStats = brandConfig?.stats || getFeatureStats();
+  const brandColors = brandConfig?.colors || getBrandColors();
 
   // CRITICAL: Handle OAuth code that wrongly lands on homepage
   // This happens when Supabase redirect URL is misconfigured

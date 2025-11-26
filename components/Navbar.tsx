@@ -25,12 +25,27 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [brandConfig, setBrandConfig] = useState<any>(null)
   const supabase = createSupabaseClient()
   
-  // Get brand configuration
-  const brandName = getBrandName()
-  const logoUrl = getLogoUrl()
-  const brandColors = getBrandColors()
+  // Fetch brand config from API (domain-based)
+  useEffect(() => {
+    fetch('/api/brand-config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.brand) {
+          setBrandConfig(data.brand)
+        }
+      })
+      .catch(error => {
+        console.warn('Failed to load brand config, using static:', error)
+      })
+  }, [])
+  
+  // Get brand configuration (dynamic or fallback to static)
+  const brandName = brandConfig?.name || getBrandName()
+  const logoUrl = brandConfig?.logoUrl || getLogoUrl()
+  const brandColors = brandConfig?.colors || getBrandColors()
   
   // Split brand name for display (first word + rest)
   const brandNameParts = brandName.split(' ')
