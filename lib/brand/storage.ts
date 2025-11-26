@@ -14,7 +14,11 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { brand } from '@/brand.config'
 
-const USE_DB = process.env.BRAND_USE_DB === 'true'
+// Default to database if Supabase is available, otherwise use files (dev only)
+// In production (Vercel), file system is read-only, so always use database
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+const hasSupabase = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+const USE_DB = process.env.BRAND_USE_DB === 'true' || (isProduction && hasSupabase) || hasSupabase
 const BRANDS_DIR = path.join(process.cwd(), 'data', 'brands')
 
 // Supabase client (service role for admin operations)
@@ -287,7 +291,11 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
     }
   }
 
-  // Fallback to file-based
+  // Fallback to file-based (dev only - production uses DB)
+  if (isProduction) {
+    throw new Error('Cannot save brand: Database storage required in production. Please set BRAND_USE_DB=true and ensure Supabase is configured.')
+  }
+
   try {
     await ensureBrandsDir()
     const brands = await getAllBrands()
@@ -312,7 +320,77 @@ export async function saveBrand(brandData: BrandData, userId?: string): Promise<
     await writeFile(brandsFile, JSON.stringify(brands, null, 2), 'utf-8')
     
     return brandData
-  } catch (error) {
+  } catch (error: any) {
+    // If file write fails (read-only filesystem), try database as last resort
+    if (error.code === 'EROFS' || error.message?.includes('read-only')) {
+      console.warn('File system is read-only, attempting database save...')
+      const supabase = getSupabaseAdmin()
+      if (supabase) {
+        try {
+          if (brandData.id) {
+            const { data, error: dbError } = await supabase
+              .from('brands')
+              .update({
+                slug: brandData.slug,
+                name: brandData.name,
+                is_active: brandData.is_active,
+                config: brandData.config,
+                asset_urls: brandData.asset_urls || {},
+                updated_by: userId,
+              })
+              .eq('id', brandData.id)
+              .select()
+              .single()
+            
+            if (!dbError && data) {
+              return {
+                id: data.id,
+                slug: data.slug,
+                name: data.name,
+                is_active: data.is_active,
+                config: data.config,
+                asset_urls: data.asset_urls || {},
+                created_at: data.created_at,
+                updated_at: data.updated_at,
+                created_by: data.created_by,
+                updated_by: data.updated_by,
+              }
+            }
+          } else {
+            const { data, error: dbError } = await supabase
+              .from('brands')
+              .insert({
+                slug: brandData.slug,
+                name: brandData.name,
+                is_active: brandData.is_active,
+                config: brandData.config,
+                asset_urls: brandData.asset_urls || {},
+                created_by: userId,
+                updated_by: userId,
+              })
+              .select()
+              .single()
+            
+            if (!dbError && data) {
+              return {
+                id: data.id,
+                slug: data.slug,
+                name: data.name,
+                is_active: data.is_active,
+                config: data.config,
+                asset_urls: data.asset_urls || {},
+                created_at: data.created_at,
+                updated_at: data.updated_at,
+                created_by: data.created_by,
+                updated_by: data.updated_by,
+              }
+            }
+          }
+        } catch (dbError) {
+          console.error('Database save also failed:', dbError)
+        }
+      }
+    }
     console.error('Error saving brand to file:', error)
     throw error
   }
@@ -339,7 +417,11 @@ export async function deleteBrand(idOrSlug: string): Promise<boolean> {
     }
   }
 
-  // Fallback to file-based
+  // Fallback to file-based (dev only)
+  if (isProduction) {
+    return false
+  }
+
   try {
     const brands = await getAllBrands()
     const filtered = brands.filter(b => b.id !== idOrSlug && b.slug !== idOrSlug)
@@ -348,7 +430,10 @@ export async function deleteBrand(idOrSlug: string): Promise<boolean> {
     await writeFile(brandsFile, JSON.stringify(filtered, null, 2), 'utf-8')
     
     return true
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'EROFS' || error.message?.includes('read-only')) {
+      console.warn('File system is read-only, cannot delete from file')
+    }
     console.error('Error deleting brand from file:', error)
     return false
   }
@@ -385,7 +470,11 @@ export async function activateBrand(idOrSlug: string, userId?: string): Promise<
     }
   }
 
-  // Fallback to file-based
+  // Fallback to file-based (dev only)
+  if (isProduction) {
+    return false
+  }
+
   try {
     const brands = await getAllBrands()
     brands.forEach(b => {
@@ -396,7 +485,10 @@ export async function activateBrand(idOrSlug: string, userId?: string): Promise<
     await writeFile(brandsFile, JSON.stringify(brands, null, 2), 'utf-8')
     
     return true
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'EROFS' || error.message?.includes('read-only')) {
+      console.warn('File system is read-only, cannot activate brand in file')
+    }
     console.error('Error activating brand in file:', error)
     return false
   }
