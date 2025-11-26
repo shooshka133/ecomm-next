@@ -7,7 +7,7 @@ import { createSupabaseClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback } from 'react'
 import { ShoppingCart, Check, Heart, Eye } from 'lucide-react'
 import Link from 'next/link'
-import { getBrandColors } from '@/lib/brand'
+// Removed getBrandColors import - using CSS variables directly
 
 // Helper to convert hex to RGB
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -33,25 +33,18 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [wishlistLoading, setWishlistLoading] = useState(false)
   const [showFullDescription, setShowFullDescription] = useState(false)
-  const [brandConfig, setBrandConfig] = useState<any>(null)
   const supabase = createSupabaseClient()
   
-  // Fetch brand config from API (domain-based)
-  useEffect(() => {
-    fetch('/api/brand-config')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.brand) {
-          setBrandConfig(data.brand)
-        }
-      })
-      .catch(error => {
-        console.warn('Failed to load brand config, using static:', error)
-      })
-  }, [])
-  
-  // Get brand colors (dynamic or fallback to static)
-  const brandColors = brandConfig?.colors || getBrandColors()
+  // Use CSS variables directly (set by inline styles in layout.tsx) - no flash!
+  // These are available immediately from :root CSS variables
+  const brandColors = {
+    primary: typeof window !== 'undefined' 
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#10B981'
+      : '#10B981',
+    accent: typeof window !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-accent').trim() || '#059669'
+      : '#059669',
+  }
   
   // Check if description is long enough to need truncation (approximately 3-4 lines)
   // Lower threshold to ensure more products show the read more button

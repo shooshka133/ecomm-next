@@ -2,7 +2,7 @@
 
 import { Product } from '@/types'
 import { useState, useEffect } from 'react'
-import { getBrandColors } from '@/lib/brand'
+// Removed getBrandColors import - using CSS variables directly
 
 interface CategoryFilterProps {
   products: Product[]
@@ -11,25 +11,18 @@ interface CategoryFilterProps {
 }
 
 export default function CategoryFilter({ products, selectedCategory, onCategoryChange }: CategoryFilterProps) {
-  const [brandConfig, setBrandConfig] = useState<any>(null)
-  
-  // Fetch brand config from API (domain-based)
-  useEffect(() => {
-    fetch('/api/brand-config')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.brand) {
-          setBrandConfig(data.brand)
-        }
-      })
-      .catch(error => {
-        console.warn('Failed to load brand config, using static:', error)
-      })
-  }, [])
+  // Use CSS variables directly (set by inline styles in layout.tsx) - no flash!
+  const brandColors = {
+    primary: typeof window !== 'undefined' 
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#10B981'
+      : '#10B981',
+    accent: typeof window !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-accent').trim() || '#059669'
+      : '#059669',
+  }
   
   // Get unique categories from products
   const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean))) as string[]
-  const brandColors = brandConfig?.colors || getBrandColors()
 
   return (
     <div className="flex flex-wrap gap-3 justify-center mb-8">

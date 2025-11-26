@@ -170,15 +170,18 @@ export async function getBrandByDomain(domain: string): Promise<BrandData | null
  * If domain is provided, tries to find brand by domain first, then falls back to active brand
  */
 export async function getActiveBrand(domain?: string): Promise<BrandData | null> {
-  // If domain is provided, try to get brand by domain first
+  // If domain is provided, ONLY return brand that matches domain (no fallback)
   if (domain) {
     const domainBrand = await getBrandByDomain(domain)
     if (domainBrand) {
       return domainBrand
     }
+    // If domain provided but no match found, return null (don't fall back to is_active)
+    // This ensures store.shooshka.online and grocery.shooshka.online show different brands
+    return null
   }
 
-  // Fallback to active brand (original behavior)
+  // Only fallback to active brand if NO domain was provided
   if (USE_DB) {
     const supabase = getSupabaseAdmin()
     if (supabase) {
