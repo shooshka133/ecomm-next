@@ -209,8 +209,36 @@ export default async function RootLayout({
     
     initScript = `
       (function() {
-        // Set title immediately to prevent flash
-        document.title = "${escapedTitle}";
+        var targetTitle = "${escapedTitle}";
+        
+        // Set title immediately
+        if (document.title !== targetTitle) {
+          document.title = targetTitle;
+        }
+        
+        // Watch for title changes and immediately revert (prevents Next.js from overwriting)
+        var titleObserver = new MutationObserver(function(mutations) {
+          if (document.title !== targetTitle) {
+            document.title = targetTitle;
+          }
+        });
+        
+        // Start observing title changes
+        if (document.head) {
+          var titleElement = document.querySelector('title');
+          if (titleElement) {
+            titleObserver.observe(titleElement, { childList: true, characterData: true, subtree: true });
+          }
+        }
+        
+        // Also set on DOMContentLoaded and immediately after
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            if (document.title !== targetTitle) {
+              document.title = targetTitle;
+            }
+          });
+        }
         
         // Set brand colors immediately to prevent flash
         const root = document.documentElement;
@@ -230,6 +258,13 @@ export default async function RootLayout({
           root.style.setProperty('--brand-primary-rgb', r + ', ' + g + ', ' + b);
         }
         ` : ''}
+        
+        // Use requestAnimationFrame to set title again after Next.js might have set it
+        requestAnimationFrame(function() {
+          if (document.title !== targetTitle) {
+            document.title = targetTitle;
+          }
+        });
       })();
     `
   } catch (error) {
@@ -252,6 +287,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={poppins.variable}>
       <head>
+        {/* Critical: Set title and colors BEFORE any other scripts */}
         <script
           dangerouslySetInnerHTML={{
             __html: initScript,
