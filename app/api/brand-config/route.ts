@@ -24,10 +24,16 @@ export async function GET(request: NextRequest) {
     // Get brand config based on domain
     const brandConfig = await getActiveBrandConfig(finalDomain)
     
+    // Also get the brand ID for product filtering
+    const { getActiveBrand } = await import('@/lib/brand/storage')
+    const activeBrand = await getActiveBrand(finalDomain)
+    
     return NextResponse.json({
       success: true,
       domain: finalDomain,
       brand: brandConfig,
+      brandId: activeBrand?.id || null,
+      brandSlug: activeBrand?.slug || null,
     })
   } catch (error: any) {
     console.error('Error loading brand config:', error)

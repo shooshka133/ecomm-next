@@ -22,7 +22,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 24; // Increased from 12 to show more products
-  const supabase = createSupabaseClient();
+  const [supabase, setSupabase] = useState(createSupabaseClient());
   
   // Get brand hero configuration
   const heroTitle = getHeroTitle();
@@ -99,22 +99,110 @@ export default function Home() {
   }, [searchParams]);
 
   useEffect(() => {
-    loadProducts();
+    // Get domain-based Supabase client
+    const initSupabase = async () => {
+      try {
+        const response = await fetch('/api/supabase-config')
+        const data = await response.json()
+        
+        console.log('[Homepage] Supabase config response:', {
+          success: data.success,
+          domain: data.domain,
+          brandSlug: data.brandSlug,
+          hasUrl: !!data.supabaseUrl,
+          hasKey: !!data.supabaseKey,
+          url: data.supabaseUrl?.substring(0, 30) + '...'
+        })
+        
+        if (data.success && data.supabaseUrl && data.supabaseKey) {
+          // Import createClient dynamically
+          const { createClient } = await import('@supabase/supabase-js')
+          const domainClient = createClient(data.supabaseUrl, data.supabaseKey)
+          console.log('[Homepage] Created domain-based Supabase client for:', data.brandSlug)
+          setSupabase(domainClient)
+        } else {
+          console.warn('[Homepage] Failed to get Supabase config, using default client')
+        }
+      } catch (error: any) {
+        console.error('[Homepage] Error initializing domain-based Supabase client:', error)
+        console.warn('[Homepage] Using default Supabase client (main project). This is OK if /api/supabase-config is not deployed yet.')
+        // Keep default client - this will use main Supabase project
+      }
+    }
+    
+    initSupabase()
   }, []);
+
+  useEffect(() => {
+    if (supabase) {
+      console.log('[Homepage] Supabase client ready, loading products...')
+      loadProducts();
+    } else {
+      console.log('[Homepage] Waiting for Supabase client...')
+    }
+  }, [supabase]);
 
   const loadProducts = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true)
+      
+      // Get brand config to determine if we should filter by brand_id
+      let brandId: string | null = null
+      let brandSlug: string | null = null
+      try {
+        const brandResponse = await fetch('/api/brand-config')
+        const brandData = await brandResponse.json()
+        if (brandData.success) {
+          brandId = brandData.brandId
+          brandSlug = brandData.brandSlug
+        }
+      } catch (error) {
+        console.warn('[Homepage] Could not fetch brand config:', error)
+      }
+
+      console.log('[Homepage] Loading products:', {
+        brandSlug,
+        brandId,
+        supabaseUrl: (supabase as any)?.supabaseUrl?.substring(0, 30) + '...' || 'unknown'
+      })
+
+      // Build query
+      // If using a separate Supabase project (grocery), load ALL products from that project
+      // If using main Supabase project, filter by brand_id
+      let query = supabase
         .from("products")
         .select("*")
-        .order("created_at", { ascending: false });
+      
+      // Only filter by brand_id if we're using the main Supabase project
+      // Grocery Supabase project should have all grocery products (no filtering needed)
+      const isGroceryBrand = brandSlug && (
+        brandSlug.toLowerCase() === 'grocery-store' ||
+        brandSlug.toLowerCase() === 'grocerystore' ||
+        brandSlug.toLowerCase().includes('grocery')
+      )
+      
+      if (brandId && !isGroceryBrand) {
+        query = query.or(`brand_id.eq.${brandId},brand_id.is.null`)
+        console.log('[Homepage] Filtering by brand_id:', brandId)
+      } else {
+        console.log('[Homepage] Loading all products (no brand filter)')
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Homepage] Supabase query error:', error)
+        throw error
+      }
+      
+      console.log('[Homepage] Loaded products:', data?.length || 0, 'items')
+      if (data && data.length > 0) {
+        console.log('[Homepage] First product:', data[0].name, 'Category:', data[0].category)
+      }
+      
       setProducts(data || []);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error loading products:', error);
-      }
+      console.error('[Homepage] Error loading products:', error);
     } finally {
       setLoading(false);
     }

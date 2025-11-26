@@ -39,7 +39,11 @@ export async function getSupabaseClient() {
   // Normalize brand slug for matching
   const normalizedSlug = brandSlug.toLowerCase().replace(/\s+/g, '-')
   
-  if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
+  if (normalizedSlug === 'grocery-store' || normalizedSlug === 'grocerystore') {
+    // Grocery brand uses BRAND_A Supabase project
+    url = process.env.NEXT_PUBLIC_SUPABASE_URL_BRAND_A || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_BRAND_A || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  } else if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
     url = process.env.NEXT_PUBLIC_SUPABASE_URL_BRAND_A || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
     key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY_BRAND_A || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   } else if (normalizedSlug === 'ecommerce-start' || normalizedSlug === 'ecommercestart') {
@@ -73,7 +77,11 @@ export async function getSupabaseAdminClient() {
   // Normalize brand slug for matching
   const normalizedSlug = brandSlug.toLowerCase().replace(/\s+/g, '-')
   
-  if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
+  if (normalizedSlug === 'grocery-store' || normalizedSlug === 'grocerystore') {
+    // Grocery brand uses BRAND_A Supabase project
+    url = process.env.NEXT_PUBLIC_SUPABASE_URL_BRAND_A || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    key = process.env.SUPABASE_SERVICE_ROLE_KEY_BRAND_A || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  } else if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
     url = process.env.NEXT_PUBLIC_SUPABASE_URL_BRAND_A || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
     key = process.env.SUPABASE_SERVICE_ROLE_KEY_BRAND_A || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
   } else if (normalizedSlug === 'ecommerce-start' || normalizedSlug === 'ecommercestart') {
@@ -114,7 +122,9 @@ export async function getResendClient() {
   // Normalize brand slug for matching
   const normalizedSlug = brandSlug.toLowerCase().replace(/\s+/g, '-')
   
-  if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
+  if (normalizedSlug === 'grocery-store' || normalizedSlug === 'grocerystore') {
+    apiKey = process.env.RESEND_API_KEY_BRAND_A || process.env.RESEND_API_KEY || ''
+  } else if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
     apiKey = process.env.RESEND_API_KEY_BRAND_A || process.env.RESEND_API_KEY || ''
   } else if (normalizedSlug === 'ecommerce-start' || normalizedSlug === 'ecommercestart') {
     apiKey = process.env.RESEND_API_KEY_BRAND_B || process.env.RESEND_API_KEY || ''
@@ -145,7 +155,10 @@ export async function getResendConfig() {
   // Normalize brand slug for matching
   const normalizedSlug = brandSlug.toLowerCase().replace(/\s+/g, '-')
   
-  if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
+  if (normalizedSlug === 'grocery-store' || normalizedSlug === 'grocerystore') {
+    fromEmail = process.env.RESEND_FROM_EMAIL_BRAND_A || process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+    fromName = process.env.RESEND_FROM_NAME_BRAND_A || brandName
+  } else if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
     fromEmail = process.env.RESEND_FROM_EMAIL_BRAND_A || process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
     fromName = process.env.RESEND_FROM_NAME_BRAND_A || brandName
   } else if (normalizedSlug === 'ecommerce-start' || normalizedSlug === 'ecommercestart') {
@@ -181,7 +194,9 @@ export async function getStripeClient() {
   // Normalize brand slug for matching
   const normalizedSlug = brandSlug.toLowerCase().replace(/\s+/g, '-')
   
-  if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
+  if (normalizedSlug === 'grocery-store' || normalizedSlug === 'grocerystore') {
+    secretKey = process.env.STRIPE_SECRET_KEY_BRAND_A || process.env.STRIPE_SECRET_KEY || ''
+  } else if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
     secretKey = process.env.STRIPE_SECRET_KEY_BRAND_A || process.env.STRIPE_SECRET_KEY || ''
   } else if (normalizedSlug === 'ecommerce-start' || normalizedSlug === 'ecommercestart') {
     secretKey = process.env.STRIPE_SECRET_KEY_BRAND_B || process.env.STRIPE_SECRET_KEY || ''
@@ -211,7 +226,9 @@ export async function getStripePublishableKey() {
   // Normalize brand slug for matching
   const normalizedSlug = brandSlug.toLowerCase().replace(/\s+/g, '-')
   
-  if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
+  if (normalizedSlug === 'grocery-store' || normalizedSlug === 'grocerystore') {
+    return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_BRAND_A || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
+  } else if (normalizedSlug === 'green-theme-store' || normalizedSlug === 'greenthemestore') {
     return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_BRAND_A || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
   } else if (normalizedSlug === 'ecommerce-start' || normalizedSlug === 'ecommercestart') {
     return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_BRAND_B || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
