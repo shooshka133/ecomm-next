@@ -194,28 +194,57 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Get brand config for title script
+  // Get brand config for title and colors script
   const headersList = await headers()
   const domain = getDomainFromRequest(headersList)
-  let titleScript = ''
+  let initScript = ''
   
   try {
     const brandConfig = await getActiveBrandConfig(domain)
     const title = brandConfig?.seo?.title || getSeoTitle()
-    titleScript = `
+    const colors = brandConfig?.colors || getBrandColors()
+    
+    // Escape title for JS
+    const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'")
+    
+    initScript = `
       (function() {
         // Set title immediately to prevent flash
-        if (document.title !== "${title.replace(/"/g, '\\"')}") {
-          document.title = "${title.replace(/"/g, '\\"')}";
+        document.title = "${escapedTitle}";
+        
+        // Set brand colors immediately to prevent flash
+        const root = document.documentElement;
+        ${colors.primary ? `root.style.setProperty('--brand-primary', '${colors.primary}');` : ''}
+        ${colors.accent ? `root.style.setProperty('--brand-accent', '${colors.accent}');` : ''}
+        ${colors.secondary ? `root.style.setProperty('--brand-secondary', '${colors.secondary}');` : ''}
+        ${colors.background ? `root.style.setProperty('--brand-background', '${colors.background}');` : ''}
+        ${colors.text ? `root.style.setProperty('--brand-text', '${colors.text}');` : ''}
+        
+        // Convert primary color to RGB for rgba usage
+        ${colors.primary ? `
+        const primaryHex = '${colors.primary}'.replace('#', '');
+        if (primaryHex.length === 6) {
+          const r = parseInt(primaryHex.substring(0, 2), 16);
+          const g = parseInt(primaryHex.substring(2, 4), 16);
+          const b = parseInt(primaryHex.substring(4, 6), 16);
+          root.style.setProperty('--brand-primary-rgb', r + ', ' + g + ', ' + b);
         }
+        ` : ''}
       })();
     `
   } catch (error) {
-    // Fallback to default title
+    // Fallback to default
     const defaultTitle = getSeoTitle()
-    titleScript = `
+    const defaultColors = getBrandColors()
+    initScript = `
       (function() {
         document.title = "${defaultTitle.replace(/"/g, '\\"')}";
+        const root = document.documentElement;
+        root.style.setProperty('--brand-primary', '${defaultColors.primary}');
+        root.style.setProperty('--brand-accent', '${defaultColors.accent}');
+        root.style.setProperty('--brand-secondary', '${defaultColors.secondary}');
+        root.style.setProperty('--brand-background', '${defaultColors.background}');
+        root.style.setProperty('--brand-text', '${defaultColors.text}');
       })();
     `
   }
@@ -225,7 +254,7 @@ export default async function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: titleScript,
+            __html: initScript,
           }}
         />
         {/* Suppress extension-related errors */}
