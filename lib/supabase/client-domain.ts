@@ -61,17 +61,18 @@ export async function createDomainSupabaseClient(): Promise<SupabaseClient> {
   }
   
   // Fallback to default client
-  return createClientComponentClient()
+  return createClientComponentClient() as SupabaseClient
 }
 
 /**
  * Get Supabase client (with domain-based routing)
  * This is a drop-in replacement for createSupabaseClient()
+ * Note: This file is not currently used, but kept for future reference
  */
 export function createSupabaseClientWithDomain() {
   // For client components, we need to use the async version
   // But since hooks can't be async, we'll use a different approach
   // Return the default client for now, and update components to use the async version
-  return createClientComponentClient()
+  return createClientComponentClient() as any
 }
 
