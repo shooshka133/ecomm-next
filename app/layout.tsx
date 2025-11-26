@@ -236,92 +236,51 @@ export default async function RootLayout({
     
     inlineStyles += `\n      }`
     
+    // Use blocking script that runs synchronously - no async, no delays
     initScript = `
       (function() {
         var targetTitle = "${escapedTitle}";
         
-        // ULTRA-AGGRESSIVE: Override document.title setter to ALWAYS use our title
+        // CRITICAL: Override document.title IMMEDIATELY before Next.js can set it
         try {
-          var titleDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, 'title');
-          if (titleDescriptor) {
-            var originalGetter = titleDescriptor.get;
-            var originalSetter = titleDescriptor.set;
+          var desc = Object.getOwnPropertyDescriptor(Document.prototype, 'title');
+          if (desc && desc.set) {
+            var origSet = desc.set;
             Object.defineProperty(document, 'title', {
-              get: function() {
-                return originalGetter ? originalGetter.call(this) : targetTitle;
-              },
-              set: function(value) {
-                // Always set to our target title, ignore any other values
-                if (originalSetter) {
-                  originalSetter.call(this, targetTitle);
-                }
-              },
+              get: function() { return targetTitle; },
+              set: function() { origSet.call(this, targetTitle); },
               configurable: true
             });
           }
-        } catch(e) {
-          // Fallback if override fails
-        }
+        } catch(e) {}
         
-        // Set title immediately (multiple times to catch any timing issues)
-        function setTitleNow() {
-          try {
-            if (document.title !== targetTitle) {
-              document.title = targetTitle;
-            }
-          } catch(e) {}
-        }
+        // Set title immediately (synchronous, blocking)
+        try {
+          if (document.title !== targetTitle) {
+            document.title = targetTitle;
+          }
+        } catch(e) {}
         
-        // Set immediately
-        setTitleNow();
-        
-        // Watch for title element changes
-        var titleObserver = null;
-        function startObserving() {
-          if (document.head) {
-            var titleElement = document.querySelector('title');
-            if (titleElement && !titleObserver) {
-              titleObserver = new MutationObserver(function() {
-                setTitleNow();
-              });
-              titleObserver.observe(titleElement, { 
-                childList: true, 
-                characterData: true, 
-                subtree: true
-              });
-            }
+        // Watch for any title changes and force it back
+        if (document.head) {
+          var titleEl = document.querySelector('title');
+          if (titleEl) {
+            var obs = new MutationObserver(function() {
+              if (document.title !== targetTitle) {
+                document.title = targetTitle;
+              }
+            });
+            obs.observe(titleEl, { childList: true, characterData: true, subtree: true });
           }
         }
         
-        // Start observing immediately
-        startObserving();
+        // Also set on document ready events
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', function() {
-            setTitleNow();
-            startObserving();
+            document.title = targetTitle;
           }, true);
-        }
-        
-        // Set on multiple events
-        ['DOMContentLoaded', 'load'].forEach(function(event) {
-          document.addEventListener(event, setTitleNow, true);
-        });
-        
-        // Set repeatedly for first 500ms (catches any delayed changes)
-        var attempts = 0;
-        var titleInterval = setInterval(function() {
-          setTitleNow();
-          attempts++;
-          if (attempts > 10) { // Stop after 500ms (10 * 50ms)
-            clearInterval(titleInterval);
-          }
-        }, 50);
-        
-        // Multiple requestAnimationFrame calls
-        if (typeof requestAnimationFrame !== 'undefined') {
-          requestAnimationFrame(setTitleNow);
-          setTimeout(function() { requestAnimationFrame(setTitleNow); }, 0);
-          setTimeout(function() { requestAnimationFrame(setTitleNow); }, 10);
+        } else {
+          document.title = targetTitle;
         }
       })();
     `
@@ -358,17 +317,31 @@ export default async function RootLayout({
     `
   }
   
+  // Get title for direct injection
+  let directTitle = getSeoTitle()
+  try {
+    const headersList = await headers()
+    const domain = getDomainFromRequest(headersList)
+    const brandConfig = await getActiveBrandConfig(domain)
+    directTitle = brandConfig?.seo?.title || getSeoTitle()
+  } catch (error) {
+    // Fallback already set
+  }
+
   return (
     <html lang="en" className={poppins.variable}>
       <head>
-        {/* CRITICAL: These must be FIRST to prevent any flash */}
+        {/* CRITICAL: Direct title tag to prevent any flash */}
+        <title>{directTitle}</title>
+        {/* CRITICAL: Order matters - CSS first, then blocking script, then JSON */}
         {/* 1. Set colors via inline CSS - runs before any rendering */}
         <style dangerouslySetInnerHTML={{ __html: inlineStyles }} />
-        {/* 2. Set title IMMEDIATELY - blocking script that runs before page renders */}
+        {/* 2. Set title IMMEDIATELY with blocking script - must run before Next.js metadata */}
         <script
           dangerouslySetInnerHTML={{
             __html: initScript,
           }}
+          suppressHydrationWarning
         />
         {/* 3. Inject brand config as JSON for client-side access */}
         <script
@@ -377,6 +350,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: brandConfigJson,
           }}
+          suppressHydrationWarning
         />
         {/* Suppress extension-related errors */}
         <script

@@ -46,6 +46,16 @@ export async function getActiveBrandConfig(domain?: string) {
   try {
     const activeBrand = await getActiveBrand(domain)
     if (activeBrand && activeBrand.config) {
+      // Debug logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[getActiveBrandConfig]', {
+          domain,
+          brandSlug: activeBrand.slug,
+          brandName: activeBrand.name,
+          configName: activeBrand.config?.name,
+          seoTitle: activeBrand.config?.seo?.title,
+        })
+      }
       return activeBrand.config
     }
   } catch (error) {
@@ -53,6 +63,7 @@ export async function getActiveBrandConfig(domain?: string) {
   }
 
   // Fallback to default brand.config.ts
+  console.warn('[getActiveBrandConfig] No active brand found, using default config')
   return brand
 }
 
