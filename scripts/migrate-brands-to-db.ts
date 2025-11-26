@@ -10,6 +10,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFile } from 'fs/promises'
 import path from 'path'
+import { config } from 'dotenv'
+
+// Load environment variables from .env.local
+config({ path: path.join(process.cwd(), '.env.local') })
 
 // Load brands from file
 async function loadBrandsFromFile() {
