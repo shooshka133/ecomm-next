@@ -29,7 +29,22 @@ export default function BrandProvider({ children }: { children: React.ReactNode 
   const [brandConfig, setBrandConfig] = useState<any>(null)
 
   useEffect(() => {
-    // Try to fetch domain-based brand config
+    // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
+    // This is set in layout.tsx before React hydration, so it's available immediately
+    try {
+      const configScript = document.getElementById('__BRAND_CONFIG__')
+      if (configScript && configScript.textContent) {
+        const config = JSON.parse(configScript.textContent)
+        setBrandConfig(config)
+        return // Use server-injected config, no need to fetch
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Failed to parse server-injected brand config:', error)
+      }
+    }
+    
+    // Fallback: Fetch from API if server-injected config not available
     fetch('/api/brand-config')
       .then(res => res.json())
       .then(data => {

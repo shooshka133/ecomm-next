@@ -194,21 +194,26 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Get brand config once for both script and styles
+  // Get brand config ONCE on server - this ensures initial HTML is correct
   const headersList = await headers()
   const domain = getDomainFromRequest(headersList)
   let initScript = ''
   let inlineStyles = ''
+  let brandConfigJson = 'null'
   
   try {
     const brandConfig = await getActiveBrandConfig(domain)
     const title = brandConfig?.seo?.title || getSeoTitle()
     const colors = brandConfig?.colors || getBrandColors()
     
+    // Serialize brand config for client-side use (prevents client-side fetching)
+    brandConfigJson = JSON.stringify(brandConfig).replace(/</g, '\\u003c')
+    
     // Escape title for JS
     const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'")
     
     // Generate inline CSS with brand colors to prevent flash
+    // This is injected in <head> BEFORE any rendering, so colors are correct from start
     inlineStyles = `
       :root {
         --brand-primary: ${colors.primary || '#4F46E5'};
@@ -295,6 +300,13 @@ export default async function RootLayout({
     // Fallback to default
     const defaultTitle = getSeoTitle()
     const defaultColors = getBrandColors()
+    const defaultBrand = {
+      name: getBrandName(),
+      colors: defaultColors,
+      seo: { title: defaultTitle },
+    }
+    brandConfigJson = JSON.stringify(defaultBrand).replace(/</g, '\\u003c')
+    
     initScript = `
       (function() {
         document.title = "${defaultTitle.replace(/"/g, '\\"')}";
@@ -320,6 +332,14 @@ export default async function RootLayout({
   return (
     <html lang="en" className={poppins.variable}>
       <head>
+        {/* Critical: Inject brand config as JSON for immediate client-side access */}
+        <script
+          type="application/json"
+          id="__BRAND_CONFIG__"
+          dangerouslySetInnerHTML={{
+            __html: brandConfigJson,
+          }}
+        />
         {/* Critical: Set colors via inline CSS BEFORE any rendering */}
         <style dangerouslySetInnerHTML={{ __html: inlineStyles }} />
         {/* Critical: Set title and watch for changes */}

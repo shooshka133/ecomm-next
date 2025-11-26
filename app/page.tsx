@@ -26,8 +26,22 @@ export default function Home() {
   const [supabaseReady, setSupabaseReady] = useState(false);
   const [brandConfig, setBrandConfig] = useState<any>(null);
   
-  // Fetch brand config from API (domain-based)
+  // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
   useEffect(() => {
+    try {
+      const configScript = document.getElementById('__BRAND_CONFIG__')
+      if (configScript && configScript.textContent) {
+        const config = JSON.parse(configScript.textContent)
+        setBrandConfig(config)
+        return // Use server-injected config, no need to fetch
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Failed to parse server-injected brand config:', error)
+      }
+    }
+    
+    // Fallback: Fetch from API if server-injected config not available
     fetch('/api/brand-config')
       .then(res => res.json())
       .then(data => {
