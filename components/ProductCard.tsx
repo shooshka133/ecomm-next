@@ -7,6 +7,19 @@ import { createSupabaseClient } from '@/lib/supabase/client'
 import { useState, useEffect, useCallback } from 'react'
 import { ShoppingCart, Check, Heart, Eye } from 'lucide-react'
 import Link from 'next/link'
+import { getBrandColors } from '@/lib/brand'
+
+// Helper to convert hex to RGB
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null
+}
 
 interface ProductCardProps {
   product: Product
@@ -21,6 +34,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [wishlistLoading, setWishlistLoading] = useState(false)
   const [showFullDescription, setShowFullDescription] = useState(false)
   const supabase = createSupabaseClient()
+  const brandColors = getBrandColors()
   
   // Check if description is long enough to need truncation (approximately 3-4 lines)
   // Lower threshold to ensure more products show the read more button
@@ -225,7 +239,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
           
           {/* Price Badge */}
-          <div className="absolute top-2 left-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-2 py-1 rounded-lg font-bold text-xs sm:text-sm shadow-lg">
+          <div 
+            className="absolute top-2 left-2 text-white px-2 py-1 rounded-lg font-bold text-xs sm:text-sm shadow-lg"
+            style={{
+              background: `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+            }}
+          >
             ${product.price.toFixed(2)}
           </div>
 
@@ -240,7 +259,18 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Product Info */}
         <div className="p-3 sm:p-4">
-          <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+          <h3 
+            className="text-sm sm:text-base font-bold text-gray-900 mb-1 line-clamp-1 transition-colors"
+            style={{
+              '--hover-color': brandColors.primary
+            } as React.CSSProperties}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = brandColors.primary || '#10B981'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#111827'
+            }}
+          >
             {product.name}
           </h3>
           {product.description && (
@@ -255,7 +285,19 @@ export default function ProductCard({ product }: ProductCardProps) {
                     e.stopPropagation()
                     setShowFullDescription(!showFullDescription)
                   }}
-                  className="mt-1 text-indigo-600 hover:text-indigo-700 text-xs font-medium"
+                  className="mt-1 text-xs font-medium transition-colors"
+                  style={{
+                    color: brandColors.primary || '#10B981'
+                  }}
+                  onMouseEnter={(e) => {
+                    const rgb = hexToRgb(brandColors.primary || '#10B981')
+                    if (rgb) {
+                      e.currentTarget.style.color = `rgb(${Math.max(0, rgb.r - 20)}, ${Math.max(0, rgb.g - 20)}, ${Math.max(0, rgb.b - 20)})`
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = brandColors.primary || '#10B981'
+                  }}
                 >
                   {showFullDescription ? 'Show less' : 'Read more'}
                 </button>
@@ -267,11 +309,26 @@ export default function ProductCard({ product }: ProductCardProps) {
           <button
             onClick={handleAddToCart}
             disabled={adding || added}
-            className={`w-full flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
-              added
-                ? 'bg-green-500 text-white'
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg'
+            className={`w-full flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg ${
+              added ? 'bg-green-500' : ''
             }`}
+            style={!added ? {
+              background: `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+            } : {}}
+            onMouseEnter={(e) => {
+              if (!added && !adding) {
+                const rgb = hexToRgb(brandColors.primary || '#10B981')
+                const accentRgb = hexToRgb(brandColors.accent || '#059669')
+                if (rgb && accentRgb) {
+                  e.currentTarget.style.background = `linear-gradient(to right, rgb(${Math.max(0, rgb.r - 20)}, ${Math.max(0, rgb.g - 20)}, ${Math.max(0, rgb.b - 20)}), rgb(${Math.max(0, accentRgb.r - 20)}, ${Math.max(0, accentRgb.g - 20)}, ${Math.max(0, accentRgb.b - 20)}))`
+                }
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!added && !adding) {
+                e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+              }
+            }}
           >
             {adding ? (
               <>

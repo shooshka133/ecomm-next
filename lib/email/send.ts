@@ -4,12 +4,14 @@ import { render } from '@react-email/render'
 import OrderConfirmationEmail from './templates/OrderConfirmation'
 import ShippingNotificationEmail from './templates/ShippingNotification'
 import DeliveryNotificationEmail from './templates/DeliveryNotification'
-import { getBrandName, getContactEmail } from '@/lib/brand'
+import { getBrandName, getContactEmail, getPrimaryColor } from '@/lib/brand'
+import { getResendClient, getResendConfig } from '@/lib/services/router'
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Legacy Resend instance for backward compatibility
+// In API routes, prefer: const resend = await getResendClient()
+const resend = new Resend(process.env.RESEND_API_KEY || '')
 
-// From email address (with brand name)
+// Legacy from email function
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 const getFromEmailWithBrand = () => {
   const brandName = getBrandName()
@@ -70,23 +72,31 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
     console.log('🔍 [Email] Starting sendOrderConfirmationEmail...')
     console.log('🔍 [Email] Environment check:')
     console.log('  - NODE_ENV:', process.env.NODE_ENV)
+    
+    // Use service router for multi-brand support
+    let resendClient: Resend
+    let fromEmail: string
+    
+    try {
+      resendClient = await getResendClient()
+      const resendConfig = await getResendConfig()
+      fromEmail = resendConfig.from
+      console.log('  - Using service router (multi-brand)')
+      console.log('  - From email:', fromEmail)
+    } catch (error) {
+      // Fallback to legacy method
+      console.warn('⚠️  [Email] Service router failed, using legacy method:', error)
+      if (!process.env.RESEND_API_KEY) {
+        console.error('❌ [Email] RESEND_API_KEY not set in environment variables!')
+        console.error('❌ [Email] This usually means environment variables are not configured in Vercel')
+        return { success: false, error: 'API key not configured - check Vercel environment variables' }
+      }
+      resendClient = resend
+      fromEmail = getFromEmailWithBrand()
+    }
+    
     console.log('  - RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
-    console.log('  - RESEND_API_KEY length:', process.env.RESEND_API_KEY?.length || 0)
-    console.log('  - RESEND_FROM_EMAIL:', process.env.RESEND_FROM_EMAIL || 'NOT SET')
-    console.log('  - FROM_EMAIL (final):', FROM_EMAIL)
     console.log('  - TO_EMAIL:', data.customerEmail)
-    
-    if (!process.env.RESEND_API_KEY) {
-      console.error('❌ [Email] RESEND_API_KEY not set in environment variables!')
-      console.error('❌ [Email] This usually means environment variables are not configured in Vercel')
-      return { success: false, error: 'API key not configured - check Vercel environment variables' }
-    }
-    
-    if (!process.env.RESEND_FROM_EMAIL || FROM_EMAIL === 'onboarding@resend.dev') {
-      console.warn('⚠️  [Email] RESEND_FROM_EMAIL not set or using default. Using:', FROM_EMAIL)
-    }
-
-    const fromEmail = getFromEmailWithBrand()
     console.log(`📧 Sending order confirmation email to ${data.customerEmail}`)
     console.log('📧 From:', fromEmail)
     console.log('📧 Subject:', `Order Confirmation #${data.orderNumber} - Thank You!`)
@@ -106,8 +116,8 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
     console.log('🔍 [Email] HTML type:', typeof emailHtml)
     console.log('🔍 [Email] HTML length:', emailHtml?.length || 0)
 
-    const { data: emailData, error } = await resend.emails.send({
-      from: getFromEmailWithBrand(),
+    const { data: emailData, error } = await resendClient.emails.send({
+      from: fromEmail,
       to: [data.customerEmail],
       subject: `Order Confirmation #${data.orderNumber} - Thank You!`,
       html: emailHtml,
@@ -142,9 +152,22 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
  */
 export async function sendShippingNotificationEmail(data: ShippingEmailData) {
   try {
-    if (!process.env.RESEND_API_KEY) {
-      console.warn('⚠️  RESEND_API_KEY not set. Skipping email send.')
-      return { success: false, error: 'API key not configured' }
+    // Use service router for multi-brand support
+    let resendClient: Resend
+    let fromEmail: string
+    
+    try {
+      resendClient = await getResendClient()
+      const resendConfig = await getResendConfig()
+      fromEmail = resendConfig.from
+    } catch (error) {
+      // Fallback to legacy method
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('⚠️  RESEND_API_KEY not set. Skipping email send.')
+        return { success: false, error: 'API key not configured' }
+      }
+      resendClient = resend
+      fromEmail = getFromEmailWithBrand()
     }
 
     console.log(`📧 Sending shipping notification email to ${data.customerEmail}`)
@@ -164,8 +187,8 @@ export async function sendShippingNotificationEmail(data: ShippingEmailData) {
       orderUrl,
     }))
 
-    const { data: emailData, error } = await resend.emails.send({
-      from: getFromEmailWithBrand(),
+    const { data: emailData, error } = await resendClient.emails.send({
+      from: fromEmail,
       to: [data.customerEmail],
       subject: `Your Order #${data.orderNumber} Has Shipped! 📦`,
       html: emailHtml,
@@ -192,9 +215,22 @@ export async function sendDeliveryNotificationEmail(data: DeliveryEmailData) {
     console.log('🔍 [Email] Starting sendDeliveryNotificationEmail...')
     console.log('🔍 [Email] TO_EMAIL:', data.customerEmail)
     
-    if (!process.env.RESEND_API_KEY) {
-      console.warn('⚠️  RESEND_API_KEY not set. Skipping email send.')
-      return { success: false, error: 'API key not configured' }
+    // Use service router for multi-brand support
+    let resendClient: Resend
+    let fromEmail: string
+    
+    try {
+      resendClient = await getResendClient()
+      const resendConfig = await getResendConfig()
+      fromEmail = resendConfig.from
+    } catch (error) {
+      // Fallback to legacy method
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('⚠️  RESEND_API_KEY not set. Skipping email send.')
+        return { success: false, error: 'API key not configured' }
+      }
+      resendClient = resend
+      fromEmail = getFromEmailWithBrand()
     }
 
     console.log(`📧 Sending delivery notification email to ${data.customerEmail}`)
@@ -204,8 +240,8 @@ export async function sendDeliveryNotificationEmail(data: DeliveryEmailData) {
     const emailHtml = await render(React.createElement(DeliveryNotificationEmail, data))
     console.log('✅ [Email] Template rendered successfully')
 
-    const { data: emailData, error } = await resend.emails.send({
-      from: getFromEmailWithBrand(),
+    const { data: emailData, error } = await resendClient.emails.send({
+      from: fromEmail,
       to: [data.customerEmail],
       subject: `Your Order #${data.orderNumber} Has Been Delivered! 🎉`,
       html: emailHtml,

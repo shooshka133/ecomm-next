@@ -7,6 +7,7 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import { UserProfile, UserAddress } from "@/types";
 import { User, MapPin, Plus, Edit, Trash2, Check, X } from "lucide-react";
 import { toast } from "@/components/Toast";
+import { getBrandColors } from "@/lib/brand";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ProfilePage() {
@@ -37,6 +38,7 @@ export default function ProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
   const supabase = createSupabaseClient();
+  const brandColors = getBrandColors();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -411,7 +413,12 @@ export default function ProfilePage() {
           {/* Personal Information */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'}, ${brandColors.secondary || '#3B82F6'})`
+                }}
+              >
                 <User className="w-8 h-8 text-white" />
               </div>
               <div>
@@ -433,7 +440,18 @@ export default function ProfilePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, full_name: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                   placeholder="Enter your full name"
                 />
               </div>
@@ -448,7 +466,18 @@ export default function ProfilePage() {
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                   placeholder="Enter your phone number"
                 />
               </div>
@@ -467,7 +496,7 @@ export default function ProfilePage() {
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <MapPin className="w-6 h-6 text-indigo-600" />
+                <MapPin className="w-6 h-6" style={{ color: brandColors.primary || '#10B981' }} />
                 <h2 className="text-2xl font-bold text-gray-900">
                   Delivery Addresses
                 </h2>
@@ -505,7 +534,13 @@ export default function ProfilePage() {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         {address.is_default && (
-                          <span className="inline-block bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full mb-2">
+                          <span 
+                            className="inline-block text-xs font-semibold px-3 py-1 rounded-full mb-2"
+                            style={{
+                              backgroundColor: `${brandColors.primary || '#10B981'}20`,
+                              color: brandColors.primary || '#10B981'
+                            }}
+                          >
                             Default
                           </span>
                         )}
@@ -532,7 +567,23 @@ export default function ProfilePage() {
                         {!address.is_default && (
                           <button
                             onClick={() => handleSetDefault(address.id)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            className="p-2 rounded-lg transition-colors"
+                            style={{
+                              color: brandColors.primary || '#10B981'
+                            }}
+                            onMouseEnter={(e) => {
+                              const hex = brandColors.primary || '#10B981'
+                              const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                              if (result) {
+                                const r = parseInt(result[1], 16)
+                                const g = parseInt(result[2], 16)
+                                const b = parseInt(result[3], 16)
+                                e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.1)`
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent'
+                            }}
                             title="Set as default"
                           >
                             <Check className="w-5 h-5" />
@@ -578,7 +629,18 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setFormData({ ...formData, label: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                       placeholder="Home"
                     />
                   </div>
@@ -594,7 +656,18 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setFormData({ ...formData, full_name: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -609,7 +682,18 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -624,7 +708,18 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setFormData({ ...formData, country: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -642,7 +737,18 @@ export default function ProfilePage() {
                           address_line1: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -659,7 +765,18 @@ export default function ProfilePage() {
                           address_line2: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -674,7 +791,18 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setFormData({ ...formData, city: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -689,7 +817,18 @@ export default function ProfilePage() {
                       onChange={(e) =>
                         setFormData({ ...formData, state: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -707,7 +846,18 @@ export default function ProfilePage() {
                           postal_code: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none"
+                  style={{
+                    '--focus-ring': brandColors.primary || '#10B981'
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
                     />
                   </div>
 
@@ -722,7 +872,10 @@ export default function ProfilePage() {
                             is_default: e.target.checked,
                           })
                         }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        className="w-4 h-4 border-gray-300 rounded"
+                        style={{
+                          accentColor: brandColors.primary || '#10B981'
+                        }}
                       />
                       <span className="text-sm text-gray-700">
                         Set as default address
@@ -758,15 +911,20 @@ export default function ProfilePage() {
 
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-lg p-8 text-white sticky top-24">
+          <div 
+            className="rounded-2xl shadow-lg p-8 text-white sticky top-24"
+            style={{
+              background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+            }}
+          >
             <h3 className="text-xl font-bold mb-4">Account Summary</h3>
             <div className="space-y-4">
               <div>
-                <p className="text-indigo-200 text-sm">Email</p>
+                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Email</p>
                 <p className="font-semibold">{user.email}</p>
               </div>
               <div>
-                <p className="text-indigo-200 text-sm">Member Since</p>
+                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Member Since</p>
                 <p className="font-semibold">
                   {/* {user.created_at
                     ? new Date(user.created_at).toLocaleDateString()
@@ -777,7 +935,7 @@ export default function ProfilePage() {
                 </p>
               </div>
               <div>
-                <p className="text-indigo-200 text-sm">Saved Addresses</p>
+                <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Saved Addresses</p>
                 <p className="font-semibold text-2xl">{addresses.length}</p>
               </div>
             </div>

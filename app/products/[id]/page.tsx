@@ -7,11 +7,13 @@ import { Product } from '@/types'
 import { useAuth } from '@/components/AuthProvider'
 import { ShoppingCart, Check, Heart, ArrowLeft, Minus, Plus, Tag, Grid, Home } from 'lucide-react'
 import Link from 'next/link'
+import { getBrandColors } from '@/lib/brand'
 
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
+  const brandColors = getBrandColors()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
@@ -243,7 +245,24 @@ export default function ProductDetailPage() {
     <div className="container mx-auto px-4 py-6 md:py-8">
       {/* Navigation Links */}
       <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
-        <Link href="/" className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-1 font-medium transition-colors"
+          style={{ color: brandColors.primary || '#10B981' }}
+          onMouseEnter={(e) => {
+            const hex = brandColors.primary || '#10B981'
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+            if (result) {
+              const r = Math.max(0, parseInt(result[1], 16) - 20)
+              const g = Math.max(0, parseInt(result[2], 16) - 20)
+              const b = Math.max(0, parseInt(result[3], 16) - 20)
+              e.currentTarget.style.color = `rgb(${r}, ${g}, ${b})`
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = brandColors.primary || '#10B981'
+          }}
+        >
           <Home className="w-4 h-4" />
           <span>Home</span>
         </Link>
@@ -252,7 +271,21 @@ export default function ProductDetailPage() {
           <>
             <Link 
               href={`/?category=${encodeURIComponent(product.category)}`}
-              className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium"
+              className="inline-flex items-center gap-1 font-medium transition-colors"
+              style={{ color: brandColors.primary || '#10B981' }}
+              onMouseEnter={(e) => {
+                const hex = brandColors.primary || '#10B981'
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                if (result) {
+                  const r = Math.max(0, parseInt(result[1], 16) - 20)
+                  const g = Math.max(0, parseInt(result[2], 16) - 20)
+                  const b = Math.max(0, parseInt(result[3], 16) - 20)
+                  e.currentTarget.style.color = `rgb(${r}, ${g}, ${b})`
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = brandColors.primary || '#10B981'
+              }}
             >
               <Tag className="w-4 h-4" />
               <span>{product.category}</span>
@@ -294,7 +327,31 @@ export default function ProductDetailPage() {
               {product.category && (
                 <Link
                   href={`/?category=${encodeURIComponent(product.category)}`}
-                  className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium hover:bg-indigo-200 transition-colors"
+                  className="px-3 py-1 rounded-full text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor: `${brandColors.primary || '#10B981'}20`,
+                    color: brandColors.primary || '#10B981'
+                  }}
+                  onMouseEnter={(e) => {
+                    const hex = brandColors.primary || '#10B981'
+                    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                    if (result) {
+                      const r = parseInt(result[1], 16)
+                      const g = parseInt(result[2], 16)
+                      const b = parseInt(result[3], 16)
+                      e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.3)`
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const hex = brandColors.primary || '#10B981'
+                    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                    if (result) {
+                      const r = parseInt(result[1], 16)
+                      const g = parseInt(result[2], 16)
+                      const b = parseInt(result[3], 16)
+                      e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.2)`
+                    }
+                  }}
                 >
                   {product.category}
                 </Link>
@@ -303,11 +360,11 @@ export default function ProductDetailPage() {
                 <button
                   onClick={handleToggleWishlist}
                   disabled={wishlistLoading}
-                  className="p-2 border-2 border-gray-300 rounded-lg hover:border-pink-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-2 border-2 border-gray-300 rounded-lg hover:border-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Heart
                     className={`w-5 h-5 transition-colors ${
-                      isWishlisted ? 'fill-pink-500 text-pink-500' : 'text-gray-400'
+                      isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400'
                     }`}
                   />
                 </button>
@@ -322,7 +379,21 @@ export default function ProductDetailPage() {
               {isDescriptionLong && (
                 <button
                   onClick={() => setShowFullDescription(!showFullDescription)}
-                  className="ml-2 text-indigo-600 hover:text-indigo-700 font-medium"
+                  className="ml-2 font-medium transition-colors"
+                  style={{ color: brandColors.primary || '#10B981' }}
+                  onMouseEnter={(e) => {
+                    const hex = brandColors.primary || '#10B981'
+                    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                    if (result) {
+                      const r = Math.max(0, parseInt(result[1], 16) - 20)
+                      const g = Math.max(0, parseInt(result[2], 16) - 20)
+                      const b = Math.max(0, parseInt(result[3], 16) - 20)
+                      e.currentTarget.style.color = `rgb(${r}, ${g}, ${b})`
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = brandColors.primary || '#10B981'
+                  }}
                 >
                   {showFullDescription ? 'Show less' : '...Read more'}
                 </button>
@@ -379,7 +450,23 @@ export default function ProductDetailPage() {
           <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
             <Link
               href="/"
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors"
+              style={{ color: brandColors.primary || '#10B981' }}
+              onMouseEnter={(e) => {
+                const hex = brandColors.primary || '#10B981'
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                if (result) {
+                  const r = parseInt(result[1], 16)
+                  const g = parseInt(result[2], 16)
+                  const b = parseInt(result[3], 16)
+                  e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.1)`
+                  e.currentTarget.style.color = `rgb(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)})`
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = brandColors.primary || '#10B981'
+              }}
             >
               <Grid className="w-4 h-4" />
               <span>All Products</span>
@@ -387,7 +474,23 @@ export default function ProductDetailPage() {
             {product.category && (
               <Link
                 href={`/?category=${encodeURIComponent(product.category)}`}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors"
+              style={{ color: brandColors.primary || '#10B981' }}
+              onMouseEnter={(e) => {
+                const hex = brandColors.primary || '#10B981'
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                if (result) {
+                  const r = parseInt(result[1], 16)
+                  const g = parseInt(result[2], 16)
+                  const b = parseInt(result[3], 16)
+                  e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.1)`
+                  e.currentTarget.style.color = `rgb(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)})`
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = brandColors.primary || '#10B981'
+              }}
               >
                 <Tag className="w-4 h-4" />
                 <span>More {product.category}</span>
@@ -395,7 +498,23 @@ export default function ProductDetailPage() {
             )}
             <Link
               href="/cart"
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors"
+              style={{ color: brandColors.primary || '#10B981' }}
+              onMouseEnter={(e) => {
+                const hex = brandColors.primary || '#10B981'
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                if (result) {
+                  const r = parseInt(result[1], 16)
+                  const g = parseInt(result[2], 16)
+                  const b = parseInt(result[3], 16)
+                  e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.1)`
+                  e.currentTarget.style.color = `rgb(${Math.max(0, r - 20)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 20)})`
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = brandColors.primary || '#10B981'
+              }}
             >
               <ShoppingCart className="w-4 h-4" />
               <span>View Cart</span>
@@ -405,8 +524,13 @@ export default function ProductDetailPage() {
           {/* Compact Features */}
           <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-200">
             <div className="text-center">
-              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-1">
-                <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-1"
+                style={{
+                  backgroundColor: `${brandColors.primary || '#10B981'}20`
+                }}
+              >
+                <svg className="w-4 h-4" style={{ color: brandColors.primary || '#10B981' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>

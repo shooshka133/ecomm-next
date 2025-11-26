@@ -18,18 +18,18 @@ export const brand = {
   slogan: "Your trusted destination for quality products and exceptional service.",
   
   // Assets (place files in /public/brand/)
-  logoUrl: "/brand/logo.png",  // Falls back to /icon.svg if not found
-  faviconUrl: "/brand/favicon.png",  // Falls back to /icon.svg if not found
-  appleIconUrl: "/brand/apple-icon.png",  // Falls back to /apple-icon.svg if not found
-  ogImage: "/brand/og.jpg",  // Falls back to logo if not found
+  logoUrl: "/icon.svg",  // Original logo
+  faviconUrl: "/icon.svg",  // Falls back to /icon.svg if not found
+  appleIconUrl: "/apple-icon.svg",  // Falls back to /apple-icon.svg if not found
+  ogImage: "/icon.svg",  // Falls back to logo if not found
   
   // Color Palette (used for Tailwind CSS variables)
   colors: {
-    primary: "#4F46E5",  // Indigo-600
-    accent: "#7C3AED",   // Purple-600
+    primary: "#4F46E5",  // Indigo-600 (Original)
+    accent: "#7C3AED",   // Purple-600 (Original)
     secondary: "#6366F1", // Indigo-500
-    background: "#F9FAFB", // Gray-50
-    text: "#111827",      // Gray-900
+    background: "#FFFFFF", // White
+    text: "#1F2937",      // Gray-800
   },
   
   // Typography
@@ -47,7 +47,7 @@ export const brand = {
   seo: {
     title: "Ecommerce Start - Modern Shopping Experience",
     description: "Discover amazing products at great prices",
-    keywords: "ecommerce, shopping, products, online store",
+    keywords: "shopping, ecommerce, products, online store",
   },
   
   // Homepage Hero Section

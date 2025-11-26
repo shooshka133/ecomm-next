@@ -6,7 +6,7 @@ import BrandProvider from '@/components/BrandProvider'
 import Navbar from '@/components/Navbar'
 import ToastWrapper from '@/components/ToastWrapper'
 import Link from 'next/link'
-import { getBrandName, getBrandSlogan, getSeoTitle, getSeoDescription, getLogoUrl, getFaviconUrl, getAppleIconUrl, getPrimaryColor, getFooterCopyright, getFooterLinks, getSocialLinks } from '@/lib/brand'
+import { getBrandName, getBrandSlogan, getSeoTitle, getSeoDescription, getLogoUrl, getFaviconUrl, getAppleIconUrl, getPrimaryColor, getFooterCopyright, getFooterLinks, getSocialLinks, getBrandColors } from '@/lib/brand'
 
 const inter = Inter({ subsets: ['latin'] })
 const poppins = Poppins({ 
@@ -49,6 +49,7 @@ function Footer() {
   const footerLinks = getFooterLinks()
   const socialLinks = getSocialLinks()
   const logoUrl = getLogoUrl()
+  const brandColors = getBrandColors()
 
   return (
     <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-20">
@@ -56,7 +57,12 @@ function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <div 
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+                }}
+              >
                 {logoUrl && logoUrl !== '/icon.svg' ? (
                   <img src={logoUrl} alt={brandName} className="w-full h-full object-contain rounded-lg" />
                 ) : (

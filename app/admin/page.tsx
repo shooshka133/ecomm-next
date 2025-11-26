@@ -256,8 +256,19 @@ export default function AdminPage() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage orders, products, and store operations</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+            <p className="text-gray-600">Manage orders, products, and store operations</p>
+          </div>
+          <Link
+            href="/admin/brand-settings"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            Brand Settings
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}

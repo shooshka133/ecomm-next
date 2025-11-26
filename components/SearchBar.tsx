@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, X } from 'lucide-react'
 import { Product } from '@/types'
 import { useRouter } from 'next/navigation'
+import { getBrandColors } from '@/lib/brand'
 
 interface SearchBarProps {
   products: Product[]
@@ -14,6 +15,7 @@ export default function SearchBar({ products }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false)
   const router = useRouter()
   const searchRef = useRef<HTMLDivElement>(null)
+  const brandColors = getBrandColors()
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -56,7 +58,19 @@ export default function SearchBar({ products }: SearchBarProps) {
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setIsFocused(true)}
           placeholder="Search for products..."
-          className="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-lg"
+          className="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 outline-none transition-all text-lg"
+          style={{
+            '--focus-border': brandColors.primary || '#10B981',
+            '--focus-ring': `${brandColors.primary || '#10B981'}20`
+          } as React.CSSProperties}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
+            e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = '#e5e7eb'
+            e.currentTarget.style.boxShadow = 'none'
+          }}
         />
         {searchTerm && (
           <button
@@ -75,7 +89,20 @@ export default function SearchBar({ products }: SearchBarProps) {
             <button
               key={product.id}
               onClick={() => handleProductClick(product.id)}
-              className="w-full p-4 hover:bg-indigo-50 transition-colors text-left flex items-center gap-4 border-b border-gray-100 last:border-0 cursor-pointer"
+              className="w-full p-4 transition-colors text-left flex items-center gap-4 border-b border-gray-100 last:border-0 cursor-pointer"
+              onMouseEnter={(e) => {
+                const hex = brandColors.primary || '#10B981'
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                if (result) {
+                  const r = parseInt(result[1], 16)
+                  const g = parseInt(result[2], 16)
+                  const b = parseInt(result[3], 16)
+                  e.currentTarget.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.1)`
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'white'
+              }}
             >
               {product.image_url ? (
                 <img
@@ -91,7 +118,12 @@ export default function SearchBar({ products }: SearchBarProps) {
               <div className="flex-1">
                 <div className="font-semibold text-gray-900">{product.name}</div>
                 <div className="text-sm text-gray-600 line-clamp-1">{product.description}</div>
-                <div className="text-indigo-600 font-bold mt-1">${product.price.toFixed(2)}</div>
+                <div 
+                  className="font-bold mt-1"
+                  style={{ color: brandColors.primary || '#10B981' }}
+                >
+                  ${product.price.toFixed(2)}
+                </div>
               </div>
             </button>
           ))}

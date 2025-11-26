@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { stripe } from '@/lib/stripe'
+import { getStripeClient } from '@/lib/services/router'
 
 // Logging helper
 const logError = (message: string, error?: any) => {
@@ -82,7 +82,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Stripe checkout session
+    // Create Stripe checkout session (using service router for multi-brand)
+    const stripe = await getStripeClient()
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: items.map((item: any) => ({

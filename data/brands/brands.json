@@ -1,0 +1,242 @@
+[
+  {
+    "slug": "default",
+    "name": "Ecommerce Start",
+    "is_active": true,
+    "config": {
+      "name": "Ecommerce Start",
+      "slogan": "Your trusted destination for quality products and exceptional service.",
+      "logoUrl": "/icon.svg",
+      "faviconUrl": "/brand/favicon.png",
+      "appleIconUrl": "/brand/apple-icon.png",
+      "ogImage": "/brand/og.jpg",
+      "colors": {
+        "primary": "#4F46E5",
+        "accent": "#7C3AED",
+        "secondary": "#6366F1",
+        "background": "#F9FAFB",
+        "text": "#111827"
+      },
+      "fontFamily": {
+        "primary": "Inter, sans-serif",
+        "heading": "Poppins, sans-serif"
+      },
+      "domain": "store.shooshka.online",
+      "contactEmail": "support@example.com",
+      "adminEmails": [
+        "admin@example.com"
+      ],
+      "seo": {
+        "title": "Ecommerce Start - Modern Shopping Experience",
+        "description": "Discover amazing products at great prices",
+        "keywords": "ecommerce, shopping, products, online store"
+      },
+      "hero": {
+        "title": "Welcome to Ecommerce Start",
+        "subtitle": "Discover amazing products at unbeatable prices. Shop the latest trends and technology with confidence.",
+        "ctaText": "Shop Now",
+        "badge": "Premium Quality Products"
+      },
+      "social": {
+        "instagram": "",
+        "facebook": "",
+        "twitter": "",
+        "linkedin": ""
+      },
+      "footer": {
+        "copyright": "© 2024 Ecommerce Start. All rights reserved.",
+        "links": {
+          "shop": [
+            {
+              "label": "All Products",
+              "href": "/"
+            },
+            {
+              "label": "New Arrivals",
+              "href": "/"
+            },
+            {
+              "label": "Best Sellers",
+              "href": "/"
+            },
+            {
+              "label": "Sale",
+              "href": "/"
+            }
+          ],
+          "support": [
+            {
+              "label": "Contact Us",
+              "href": "/"
+            },
+            {
+              "label": "Shipping Info",
+              "href": "/"
+            },
+            {
+              "label": "Returns",
+              "href": "/"
+            },
+            {
+              "label": "FAQ",
+              "href": "/"
+            }
+          ]
+        }
+      },
+      "stats": {
+        "customers": "10K+",
+        "products": "500+",
+        "countries": "50+",
+        "support": "24/7"
+      },
+      "features": [
+        {
+          "title": "Quality Guaranteed",
+          "description": "Premium products with satisfaction guarantee",
+          "icon": "Sparkles"
+        },
+        {
+          "title": "Fast Shipping",
+          "description": "Quick delivery to your doorstep",
+          "icon": "Truck"
+        },
+        {
+          "title": "Premium Support",
+          "description": "Dedicated customer service team",
+          "icon": "Shield"
+        },
+        {
+          "title": "Secure Payment",
+          "description": "Safe and encrypted transactions",
+          "icon": "Star"
+        }
+      ]
+    },
+    "asset_urls": {}
+  },
+  {
+    "slug": "test-green-store",
+    "name": "Green Theme Store",
+    "is_active": false,
+    "config": {
+      "name": "Ecommerce Start",
+      "slogan": "Your trusted destination for quality products and exceptional service.",
+      "logoUrl": "/icon.svg",
+      "faviconUrl": "/brand/favicon.png",
+      "appleIconUrl": "/brand/apple-icon.png",
+      "ogImage": "/brand/og.jpg",
+      "colors": {
+        "primary": "#10B981",
+        "accent": "#059669",
+        "secondary": "#3B82F6",
+        "background": "#FFFFFF",
+        "text": "#1F2937"
+      },
+      "fontFamily": {
+        "primary": "Roboto, sans-serif",
+        "heading": "Montserrat, sans-serif"
+      },
+      "domain": "store.shooshka.online",
+      "contactEmail": "support@example.com",
+      "adminEmails": [
+        "admin@example.com"
+      ],
+      "seo": {
+        "title": "Test Brand Store - Quality Products Online",
+        "description": "Shop the best products at Test Brand Store. Fast shipping, quality guaranteed.",
+        "keywords": "ecommerce, shopping, products, online store"
+      },
+      "hero": {
+        "title": "Welcome to Green Theme Store",
+        "subtitle": "Experience premium quality products with exceptional service. Shop with confidence.",
+        "ctaText": "Start Shopping",
+        "badge": "New Arrivals"
+      },
+      "social": {
+        "instagram": "",
+        "facebook": "",
+        "twitter": "",
+        "linkedin": ""
+      },
+      "footer": {
+        "copyright": "© 2024 Ecommerce Start. All rights reserved.",
+        "links": {
+          "shop": [
+            {
+              "label": "All Products",
+              "href": "/"
+            },
+            {
+              "label": "New Arrivals",
+              "href": "/"
+            },
+            {
+              "label": "Best Sellers",
+              "href": "/"
+            },
+            {
+              "label": "Sale",
+              "href": "/"
+            }
+          ],
+          "support": [
+            {
+              "label": "Contact Us",
+              "href": "/"
+            },
+            {
+              "label": "Shipping Info",
+              "href": "/"
+            },
+            {
+              "label": "Returns",
+              "href": "/"
+            },
+            {
+              "label": "FAQ",
+              "href": "/"
+            }
+          ]
+        }
+      },
+      "stats": {
+        "customers": "10K+",
+        "products": "500+",
+        "countries": "50+",
+        "support": "24/7"
+      },
+      "features": [
+        {
+          "title": "Quality Guaranteed",
+          "description": "Premium products with satisfaction guarantee",
+          "icon": "Sparkles"
+        },
+        {
+          "title": "Fast Shipping",
+          "description": "Quick delivery to your doorstep",
+          "icon": "Truck"
+        },
+        {
+          "title": "Premium Support",
+          "description": "Dedicated customer service team",
+          "icon": "Shield"
+        },
+        {
+          "title": "Secure Payment",
+          "description": "Safe and encrypted transactions",
+          "icon": "Star"
+        }
+      ]
+    },
+    "asset_urls": {
+      "logo": "https://eqqcidlflclgegsalbub.supabase.co/storage/v1/object/public/brand-assets/test-green-store/logo-1764118428607.svg",
+      "favicon": "https://eqqcidlflclgegsalbub.supabase.co/storage/v1/object/public/brand-assets/test-green-store/favicon-1764118435426.svg",
+      "appleIcon": "https://eqqcidlflclgegsalbub.supabase.co/storage/v1/object/public/brand-assets/test-green-store/appleIcon-1764118445448.svg",
+      "ogImage": "https://eqqcidlflclgegsalbub.supabase.co/storage/v1/object/public/brand-assets/test-green-store/ogImage-1764118454730.svg"
+    },
+    "id": "brand-1764118413528",
+    "created_at": "2025-11-26T00:53:33.528Z",
+    "updated_at": "2025-11-26T00:54:23.221Z"
+  }
+]

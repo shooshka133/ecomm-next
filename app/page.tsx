@@ -12,7 +12,7 @@ import { Sparkles, Truck, Shield, Star, TrendingUp } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Product } from "@/types";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getHeroTitle, getHeroSubtitle, getHeroCtaText, getHeroBadge, getFeatureStats } from "@/lib/brand";
+import { getHeroTitle, getHeroSubtitle, getHeroCtaText, getHeroBadge, getFeatureStats, getBrandColors } from "@/lib/brand";
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -30,6 +30,7 @@ export default function Home() {
   const heroCtaText = getHeroCtaText();
   const heroBadge = getHeroBadge();
   const featureStats = getFeatureStats();
+  const brandColors = getBrandColors();
 
   // CRITICAL: Handle OAuth code that wrongly lands on homepage
   // This happens when Supabase redirect URL is misconfigured
@@ -153,7 +154,12 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section - ASTONISHING with BOLD Product Images */}
-      <section className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white overflow-hidden">
+      <section 
+        className="relative text-white overflow-hidden"
+        style={{
+          background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'}, ${brandColors.secondary || '#3B82F6'})`
+        }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-center min-h-[500px] sm:min-h-[600px] md:min-h-[700px]">
             
@@ -169,13 +175,13 @@ export default function Home() {
                 <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent drop-shadow-2xl leading-tight">
                   {heroTitle}
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-blue-100 leading-relaxed drop-shadow-lg">
+                <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 leading-relaxed drop-shadow-lg" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
                   {heroSubtitle}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <Link
                     href="#products"
-                    className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 inline-flex items-center justify-center gap-2 shadow-2xl hover:shadow-indigo-500/50 transition-all"
+                    className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 inline-flex items-center justify-center gap-2 shadow-2xl transition-all"
                   >
                     <span>{heroCtaText}</span>
                     <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -297,7 +303,12 @@ export default function Home() {
               {products[0] && (
                 <div className="sm:col-span-2 md:col-span-2 md:row-span-2 group relative rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl hover:shadow-2xl transition-all duration-500">
                   <Link href={`/products/${products[0].id}`} className="block">
-                    <div className="aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100">
+                    <div 
+                      className="aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] overflow-hidden"
+                      style={{
+                        background: `linear-gradient(to bottom right, ${brandColors.primary}20, ${brandColors.accent}20)`
+                      }}
+                    >
                       {products[0].image_url ? (
                         <img
                           src={products[0].image_url}
@@ -312,13 +323,16 @@ export default function Home() {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                      <div className="inline-block bg-indigo-600 text-white text-xs px-2 sm:px-3 py-1 rounded-full mb-2 sm:mb-3">
+                      <div 
+                        className="text-white text-xs px-2 sm:px-3 py-1 rounded-full mb-2 sm:mb-3"
+                        style={{ backgroundColor: brandColors.primary || '#10B981' }}
+                      >
                         Featured
                       </div>
                       <h3 className="text-lg sm:text-2xl md:text-3xl font-bold mb-1 sm:mb-2 line-clamp-2">
                         {products[0].name}
                       </h3>
-                      <p className="text-base sm:text-lg md:text-xl font-semibold text-indigo-200">
+                      <p className="text-base sm:text-lg md:text-xl font-semibold" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                         ${products[0].price}
                       </p>
                     </div>
@@ -351,7 +365,7 @@ export default function Home() {
                       <h3 className="text-sm sm:text-lg md:text-xl font-bold mb-1 line-clamp-2">
                         {product.name}
                       </h3>
-                      <p className="text-sm sm:text-base md:text-lg font-semibold text-indigo-200">
+                      <p className="text-sm sm:text-base md:text-lg font-semibold" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                         ${product.price}
                       </p>
                     </div>
@@ -392,9 +406,12 @@ export default function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                   <h3 className="font-bold mb-1 text-xs sm:text-sm md:text-base line-clamp-2">{product.name}</h3>
-                  <p className="font-semibold text-indigo-200 text-sm sm:text-base">${product.price}</p>
+                  <p className="font-semibold text-sm sm:text-base" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>${product.price}</p>
                 </div>
-                <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-indigo-600 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div 
+                  className="text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ backgroundColor: brandColors.primary || '#10B981' }}
+                >
                   View
                 </div>
               </Link>
@@ -456,7 +473,12 @@ export default function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-md sm:shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+              <div 
+                className="rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg w-16 h-16 sm:w-20 sm:h-20"
+                style={{
+                  background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+                }}
+              >
                 <Shield className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -508,24 +530,29 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-12 sm:py-16">
+      <section 
+        className="text-white py-12 sm:py-16"
+        style={{
+          background: `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+        }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.customers}</div>
-              <div className="text-sm sm:text-base text-indigo-200">Happy Customers</div>
+              <div className="text-sm sm:text-base" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Happy Customers</div>
             </div>
             <div>
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.products}</div>
-              <div className="text-sm sm:text-base text-indigo-200">Products</div>
+              <div className="text-sm sm:text-base" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Products</div>
             </div>
             <div>
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.countries}</div>
-              <div className="text-sm sm:text-base text-indigo-200">Countries</div>
+              <div className="text-sm sm:text-base" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Countries</div>
             </div>
             <div>
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-1 sm:mb-2">{featureStats.support}</div>
-              <div className="text-sm sm:text-base text-indigo-200">Support</div>
+              <div className="text-sm sm:text-base" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>Support</div>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Product } from '@/types'
+import { getBrandColors } from '@/lib/brand'
 
 interface AutoScrollProductsProps {
   products: Product[]
@@ -10,6 +11,7 @@ interface AutoScrollProductsProps {
 
 export default function AutoScrollProducts({ products }: AutoScrollProductsProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const brandColors = getBrandColors()
 
   useEffect(() => {
     const scrollContainer = scrollRef.current
@@ -128,7 +130,12 @@ export default function AutoScrollProducts({ products }: AutoScrollProductsProps
               </div>
 
               {/* Price Badge (Always Visible) */}
-              <div className="absolute top-3 right-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1 rounded-full shadow-lg group-hover:scale-110 transition-transform">
+              <div 
+                className="absolute top-3 right-3 text-white px-3 py-1 rounded-full shadow-lg group-hover:scale-110 transition-transform"
+                style={{
+                  background: `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+                }}
+              >
                 <span className="text-sm md:text-base font-bold">
                   ${product.price.toFixed(2)}
                 </span>
@@ -146,7 +153,15 @@ export default function AutoScrollProducts({ products }: AutoScrollProductsProps
 
             {/* Product Name Below */}
             <div className="mt-3 px-2">
-              <h3 className="font-semibold text-sm md:text-base text-gray-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+              <h3 
+                className="font-semibold text-sm md:text-base text-gray-900 line-clamp-2 transition-colors"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = brandColors.primary || '#10B981'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#111827'
+                }}
+              >
                 {product.name}
               </h3>
             </div>

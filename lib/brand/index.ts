@@ -171,7 +171,10 @@ export function getContactEmail(): string {
  */
 export function getAdminEmails(): string[] {
   try {
-    return brand?.adminEmails || DEFAULTS.adminEmails;
+    if (brand?.adminEmails) {
+      return Array.from(brand.adminEmails) as string[];
+    }
+    return DEFAULTS.adminEmails;
   } catch {
     return DEFAULTS.adminEmails;
   }

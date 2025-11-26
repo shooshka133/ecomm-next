@@ -7,7 +7,17 @@ import { useRouter } from 'next/navigation'
 import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
-import { getBrandName, getLogoUrl } from '@/lib/brand'
+import { getBrandName, getLogoUrl, getBrandColors } from '@/lib/brand'
+
+// Helper to convert hex to rgba
+function hexToRgba(hex: string, alpha: number): string {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (!result) return hex
+  const r = parseInt(result[1], 16)
+  const g = parseInt(result[2], 16)
+  const b = parseInt(result[3], 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 export default function Navbar() {
   const { user, loading, signOut } = useAuth()
@@ -20,6 +30,7 @@ export default function Navbar() {
   // Get brand configuration
   const brandName = getBrandName()
   const logoUrl = getLogoUrl()
+  const brandColors = getBrandColors()
   
   // Split brand name for display (first word + rest)
   const brandNameParts = brandName.split(' ')
@@ -135,7 +146,12 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-3 gap-4">
           <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-md overflow-hidden">
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all shadow-md overflow-hidden"
+              style={{
+                background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+              }}
+            >
               {logoUrl && logoUrl !== '/icon.svg' ? (
                 <img src={logoUrl} alt={brandName} className="w-full h-full object-contain" />
               ) : (
@@ -160,7 +176,16 @@ export default function Navbar() {
             <div className="flex items-center gap-3 lg:gap-4 flex-shrink-0">
               <Link 
                 href="/" 
-                className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-600 hover:to-purple-600 hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
+                className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
+                style={{
+                  background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`
+                }}
               >
                 Products
               </Link>
@@ -174,32 +199,73 @@ export default function Navbar() {
                 {/* Wishlist Button */}
                 <Link 
                   href="/wishlist" 
-                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-pink-100 to-rose-100 hover:from-pink-500 hover:to-rose-500 hover:shadow-lg hover:scale-105 hover:rotate-1 transform shadow-sm"
+                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg hover:shadow-lg hover:scale-105 hover:rotate-1 transform shadow-sm"
+                  style={{
+                    background: `linear-gradient(to right, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.secondary || '#3B82F6'}, ${brandColors.accent || '#059669'})`
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`
+                  }}
                 >
                   Wishlist
                 </Link>
 
                 <Link 
                   href="/cart" 
-                  className="relative flex items-center gap-2 text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-600 hover:to-purple-600 hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
+                  className="relative flex items-center gap-2 text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all group whitespace-nowrap px-4 py-2 rounded-lg hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
+                  style={{
+                    background: `linear-gradient(to right, ${brandColors.primary}20, ${brandColors.accent}20)`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary}, ${brandColors.accent})`
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary}20, ${brandColors.accent}20)`
+                  }}
                 >
                   <ShoppingCart className="w-4 h-4" />
                   <span>Cart</span>
                   {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-poppins font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md ring-2 ring-white">
+                    <span 
+                      className="absolute -top-1 -right-1 text-white text-xs font-poppins font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md ring-2 ring-white"
+                      style={{
+                        background: `linear-gradient(to right, ${brandColors.secondary || '#3B82F6'}, ${brandColors.accent || '#059669'})`
+                      }}
+                    >
                       {cartCount > 9 ? '9+' : cartCount}
                     </span>
                   )}
                 </Link>
                 <Link 
                   href="/orders" 
-                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 hover:from-indigo-600 hover:to-purple-600 hover:shadow-lg hover:scale-105 hover:rotate-1 transform shadow-sm"
+                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg hover:shadow-lg hover:scale-105 hover:rotate-1 transform shadow-sm"
+                  style={{
+                    background: `linear-gradient(to right, ${brandColors.primary}20, ${brandColors.accent}20)`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary}, ${brandColors.accent})`
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary}20, ${brandColors.accent}20)`
+                  }}
                 >
                   Orders
                 </Link>
                 <Link 
                   href="/profile" 
-                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-600 hover:to-pink-600 hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
+                  className="text-gray-700 hover:text-white font-poppins font-semibold text-sm transition-all relative group whitespace-nowrap px-4 py-2 rounded-lg hover:shadow-lg hover:scale-105 hover:-rotate-1 transform shadow-sm"
+                  style={{
+                    background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)})`,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.secondary || '#3B82F6'})`
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)})`
+                  }}
                 >
                   Profile
                 </Link>
@@ -213,14 +279,35 @@ export default function Navbar() {
                 )}
                 <div className="flex items-center gap-3 pl-4 border-l border-gray-200 flex-shrink-0">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ring-2 ring-white">
+                    <div 
+                      className="w-9 h-9 rounded-full flex items-center justify-center shadow-sm flex-shrink-0 ring-2 ring-white"
+                      style={{
+                        background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'}, ${brandColors.secondary || '#3B82F6'})`
+                      }}
+                    >
                       <User className="w-4 h-4 text-white" />
                     </div>
                     <span className="text-gray-700 font-poppins font-semibold hidden xl:block whitespace-nowrap text-sm">{user.email?.split('@')[0]}</span>
                   </div>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center gap-1.5 bg-gradient-to-r from-red-500 to-rose-500 text-white px-3 py-1.5 rounded-lg hover:from-red-600 hover:to-rose-600 transition-all font-poppins font-medium shadow-sm hover:shadow-md flex-shrink-0 whitespace-nowrap text-sm"
+                    className="flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg transition-all font-poppins font-medium shadow-sm hover:shadow-md flex-shrink-0 whitespace-nowrap text-sm"
+                    style={{
+                      background: `linear-gradient(to right, ${brandColors.accent || '#059669'}, ${brandColors.primary || '#10B981'})`
+                    }}
+                    onMouseEnter={(e) => {
+                      const hex = brandColors.accent || '#059669'
+                      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                      if (result) {
+                        const r = Math.max(0, parseInt(result[1], 16) - 20)
+                        const g = Math.max(0, parseInt(result[2], 16) - 20)
+                        const b = Math.max(0, parseInt(result[3], 16) - 20)
+                        e.currentTarget.style.background = `linear-gradient(to right, rgb(${r}, ${g}, ${b}), ${brandColors.primary || '#10B981'})`
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.accent || '#059669'}, ${brandColors.primary || '#10B981'})`
+                    }}
                   >
                     <LogOut className="w-4 h-4" />
                     <span className="hidden lg:inline">Sign Out</span>
@@ -230,7 +317,16 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/auth"
-                className="bg-gradient-to-r from-indigo-200 to-purple-200 text-gray-700 px-6 py-2 rounded-lg font-poppins font-bold text-sm hover:from-indigo-600 hover:to-purple-600 hover:text-white transition-all shadow-sm hover:shadow-lg transform hover:scale-105 hover:-rotate-1 flex-shrink-0"
+                className="text-gray-700 px-6 py-2 rounded-lg font-poppins font-bold text-sm hover:text-white transition-all shadow-sm hover:shadow-lg transform hover:scale-105 hover:-rotate-1 flex-shrink-0"
+                style={{
+                  background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.3)}, ${hexToRgba(brandColors.accent || '#059669', 0.3)})`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary}, ${brandColors.accent})`
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.3)}, ${hexToRgba(brandColors.accent || '#059669', 0.3)})`
+                }}
               >
                 Sign In
               </Link>
@@ -240,7 +336,14 @@ export default function Navbar() {
           {/* Mobile/Tablet Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-gray-700 hover:text-indigo-600"
+            className="lg:hidden p-2 text-gray-700 transition-colors"
+            style={{ '--hover-color': brandColors.primary } as React.CSSProperties}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = brandColors.primary || '#10B981'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#374151'
+            }}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -252,7 +355,16 @@ export default function Navbar() {
             <div className="flex flex-col gap-3">
               <Link 
                 href="/" 
-                className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 active:from-indigo-600 active:to-purple-600 active:scale-95 transition-all transform shadow-sm"
+                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg active:scale-95 transition-all transform shadow-sm"
+                    style={{
+                      background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`,
+                    }}
+                    onTouchStart={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+                    }}
+                    onTouchEnd={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`
+                    }}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Products
@@ -261,14 +373,32 @@ export default function Navbar() {
                 <>
                   <Link 
                     href="/wishlist" 
-                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-pink-100 to-rose-100 active:from-pink-500 active:to-rose-500 active:scale-95 transition-all transform shadow-sm"
+                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg active:scale-95 transition-all transform shadow-sm"
+                    style={{
+                      background: `linear-gradient(to right, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`,
+                    }}
+                    onTouchStart={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.secondary || '#3B82F6'}, ${brandColors.accent || '#059669'})`
+                    }}
+                    onTouchEnd={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`
+                    }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Wishlist
                   </Link>
                   <Link 
                     href="/cart" 
-                    className="flex items-center justify-between text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 active:from-indigo-600 active:to-purple-600 active:scale-95 transition-all transform shadow-sm"
+                    className="flex items-center justify-between text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg active:scale-95 transition-all transform shadow-sm"
+                    style={{
+                      background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`,
+                    }}
+                    onTouchStart={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+                    }}
+                    onTouchEnd={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`
+                    }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <span className="flex items-center gap-2">
@@ -276,21 +406,44 @@ export default function Navbar() {
                       Cart
                     </span>
                     {cartCount > 0 && (
-                      <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-poppins font-bold rounded-full px-2 py-1 shadow-sm">
+                      <span 
+                        className="text-white text-xs font-poppins font-bold rounded-full px-2 py-1 shadow-sm"
+                        style={{
+                          background: `linear-gradient(to right, ${brandColors.secondary || '#3B82F6'}, ${brandColors.accent || '#059669'})`
+                        }}
+                      >
                         {cartCount}
                       </span>
                     )}
                   </Link>
                   <Link 
                     href="/orders" 
-                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-indigo-100 to-purple-100 active:from-indigo-600 active:to-purple-600 active:scale-95 transition-all transform shadow-sm"
+                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg active:scale-95 transition-all transform shadow-sm"
+                    style={{
+                      background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`,
+                    }}
+                    onTouchStart={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
+                    }}
+                    onTouchEnd={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.accent || '#059669', 0.2)})`
+                    }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Orders
                   </Link>
                   <Link 
                     href="/profile" 
-                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 active:from-purple-600 active:to-pink-600 active:scale-95 transition-all transform shadow-sm"
+                    className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg active:scale-95 transition-all transform shadow-sm"
+                    style={{
+                      background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)})`,
+                    }}
+                    onTouchStart={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary || '#10B981'}, ${brandColors.secondary || '#3B82F6'})`
+                    }}
+                    onTouchEnd={(e) => {
+                      e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.2)}, ${hexToRgba(brandColors.secondary || '#3B82F6', 0.2)})`
+                    }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Profile
@@ -298,7 +451,16 @@ export default function Navbar() {
                   {isAdmin === true && (
                     <Link 
                       href="/admin" 
-                      className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg bg-gradient-to-r from-orange-100 to-amber-100 active:from-orange-600 active:to-amber-600 active:scale-95 transition-all transform shadow-sm"
+                      className="text-gray-700 active:text-white font-poppins font-semibold text-sm py-3 px-4 rounded-lg active:scale-95 transition-all transform shadow-sm"
+                      style={{
+                        background: `linear-gradient(to right, ${hexToRgba(brandColors.accent || '#059669', 0.2)}, ${hexToRgba(brandColors.primary || '#10B981', 0.2)})`,
+                      }}
+                      onTouchStart={(e) => {
+                        e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.accent || '#059669'}, ${brandColors.primary || '#10B981'})`
+                      }}
+                      onTouchEnd={(e) => {
+                        e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.accent || '#059669', 0.2)}, ${hexToRgba(brandColors.primary || '#10B981', 0.2)})`
+                      }}
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Admin
@@ -307,7 +469,23 @@ export default function Navbar() {
                   <div className="pt-3 mt-3 border-t border-gray-200">
                     <button
                       onClick={handleSignOut}
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-rose-500 text-white font-poppins font-semibold text-sm py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-rose-600 transition-all shadow-md"
+                      className="w-full flex items-center justify-center gap-2 text-white font-poppins font-semibold text-sm py-2.5 px-4 rounded-lg transition-all shadow-md"
+                      style={{
+                        background: `linear-gradient(to right, ${brandColors.accent || '#059669'}, ${brandColors.primary || '#10B981'})`
+                      }}
+                      onMouseEnter={(e) => {
+                        const hex = brandColors.accent || '#059669'
+                        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+                        if (result) {
+                          const r = Math.max(0, parseInt(result[1], 16) - 20)
+                          const g = Math.max(0, parseInt(result[2], 16) - 20)
+                          const b = Math.max(0, parseInt(result[3], 16) - 20)
+                          e.currentTarget.style.background = `linear-gradient(to right, rgb(${r}, ${g}, ${b}), ${brandColors.primary || '#10B981'})`
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.accent || '#059669'}, ${brandColors.primary || '#10B981'})`
+                      }}
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -318,7 +496,16 @@ export default function Navbar() {
               {!user && (
                 <Link
                   href="/auth"
-                  className="bg-gradient-to-r from-indigo-200 to-purple-200 text-gray-700 font-poppins font-bold text-sm py-3 px-4 rounded-lg active:from-indigo-600 active:to-purple-600 active:text-white active:scale-95 transition-all transform shadow-sm text-center"
+                  className="text-gray-700 font-poppins font-bold text-sm py-3 px-4 rounded-lg active:text-white active:scale-95 transition-all transform shadow-sm text-center"
+                  style={{
+                    background: `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.3)}, ${hexToRgba(brandColors.accent || '#059669', 0.3)})`,
+                  }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${brandColors.primary}, ${brandColors.accent})`
+                  }}
+                  onTouchEnd={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(to right, ${hexToRgba(brandColors.primary || '#10B981', 0.3)}, ${hexToRgba(brandColors.accent || '#059669', 0.3)})`
+                  }}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sign In

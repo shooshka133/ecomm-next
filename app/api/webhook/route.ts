@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
 import { sendOrderConfirmationEmail } from '@/lib/email/send'
-
-// Use service role key for webhook to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { getSupabaseAdminClient, getStripeClient } from '@/lib/services/router'
 
 // Logging helper - ALWAYS log in production for debugging
 const log = (message: string, data?: any) => {
@@ -32,12 +25,29 @@ export async function POST(request: NextRequest) {
   }
 
   let event: Stripe.Event
+  let stripe: Stripe
 
+  // Try to get Stripe client from service router (multi-brand)
+  // Note: Webhooks come from Stripe, so we need to verify signature first
+  // We'll use the default webhook secret for verification, then route to correct brand
+  try {
+    stripe = await getStripeClient()
+  } catch (error) {
+    logError('Failed to get Stripe client from service router, using default', error)
+    // Fallback to default Stripe (for backward compatibility)
+    const { stripe: defaultStripe } = await import('@/lib/stripe')
+    stripe = defaultStripe
+  }
+
+  // Try to verify webhook signature
+  // Use default webhook secret first (could be enhanced to try brand-specific secrets)
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+  
   try {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET || ''
+      webhookSecret
     )
   } catch (err: any) {
     logError('Webhook signature verification failed', err.message)
@@ -64,6 +74,20 @@ export async function POST(request: NextRequest) {
       hasResendKey: !!process.env.RESEND_API_KEY,
       fromEmail: process.env.RESEND_FROM_EMAIL || 'NOT SET'
     })
+
+    // Get Supabase admin client (using service router for multi-brand)
+    let supabaseAdmin
+    try {
+      supabaseAdmin = await getSupabaseAdminClient()
+    } catch (error) {
+      logError('Failed to get Supabase admin client, using default', error)
+      // Fallback to default Supabase (for backward compatibility)
+      const { createClient } = await import('@supabase/supabase-js')
+      supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+    }
 
     // Check if order already exists for this session to prevent duplicates
     const { data: existingOrder } = await supabaseAdmin
