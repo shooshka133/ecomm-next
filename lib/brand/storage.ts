@@ -219,81 +219,100 @@ export async function getBrandById(idOrSlug: string): Promise<BrandData | null> 
  * Create or update brand
  */
 export async function saveBrand(brandData: BrandData, userId?: string): Promise<BrandData> {
-  if (USE_DB) {
-    const supabase = getSupabaseAdmin()
-    if (supabase) {
-      try {
-        if (brandData.id) {
-          // Update existing
-          const { data, error } = await supabase
-            .from('brands')
-            .update({
-              slug: brandData.slug,
-              name: brandData.name,
-              is_active: brandData.is_active,
-              config: brandData.config,
-              asset_urls: brandData.asset_urls || {},
-              updated_by: userId,
-            })
-            .eq('id', brandData.id)
-            .select()
-            .single()
-          
-          if (!error && data) {
-            return {
-              id: data.id,
-              slug: data.slug,
-              name: data.name,
-              is_active: data.is_active,
-              config: data.config,
-              asset_urls: data.asset_urls || {},
-              created_at: data.created_at,
-              updated_at: data.updated_at,
-              created_by: data.created_by,
-              updated_by: data.updated_by,
-            }
-          }
-        } else {
-          // Create new
-          const { data, error } = await supabase
-            .from('brands')
-            .insert({
-              slug: brandData.slug,
-              name: brandData.name,
-              is_active: brandData.is_active,
-              config: brandData.config,
-              asset_urls: brandData.asset_urls || {},
-              created_by: userId,
-              updated_by: userId,
-            })
-            .select()
-            .single()
-          
-          if (!error && data) {
-            return {
-              id: data.id,
-              slug: data.slug,
-              name: data.name,
-              is_active: data.is_active,
-              config: data.config,
-              asset_urls: data.asset_urls || {},
-              created_at: data.created_at,
-              updated_at: data.updated_at,
-              created_by: data.created_by,
-              updated_by: data.updated_by,
-            }
+  // Try database first
+  const supabase = getSupabaseAdmin()
+  if (supabase) {
+    try {
+      if (brandData.id) {
+        // Update existing
+        const { data, error } = await supabase
+          .from('brands')
+          .update({
+            slug: brandData.slug,
+            name: brandData.name,
+            is_active: brandData.is_active,
+            config: brandData.config,
+            asset_urls: brandData.asset_urls || {},
+            updated_by: userId,
+          })
+          .eq('id', brandData.id)
+          .select()
+          .single()
+        
+        if (!error && data) {
+          return {
+            id: data.id,
+            slug: data.slug,
+            name: data.name,
+            is_active: data.is_active,
+            config: data.config,
+            asset_urls: data.asset_urls || {},
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            created_by: data.created_by,
+            updated_by: data.updated_by,
           }
         }
-      } catch (error) {
-        console.error('Error saving brand to DB:', error)
+        if (error) {
+          console.error('Error updating brand in DB:', error)
+          throw new Error(`Failed to update brand: ${error.message}`)
+        }
+      } else {
+        // Create new
+        const { data, error } = await supabase
+          .from('brands')
+          .insert({
+            slug: brandData.slug,
+            name: brandData.name,
+            is_active: brandData.is_active,
+            config: brandData.config,
+            asset_urls: brandData.asset_urls || {},
+            created_by: userId,
+            updated_by: userId,
+          })
+          .select()
+          .single()
+        
+        if (!error && data) {
+          return {
+            id: data.id,
+            slug: data.slug,
+            name: data.name,
+            is_active: data.is_active,
+            config: data.config,
+            asset_urls: data.asset_urls || {},
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            created_by: data.created_by,
+            updated_by: data.updated_by,
+          }
+        }
+        if (error) {
+          console.error('Error creating brand in DB:', error)
+          throw new Error(`Failed to create brand: ${error.message}`)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error saving brand to DB:', error)
+      // If it's already an Error with message, re-throw it
+      if (error instanceof Error) {
         throw error
       }
+      throw new Error(`Database error: ${error.message || 'Unknown error'}`)
     }
   }
 
-  // Fallback to file-based (dev only - production uses DB)
+  // If no Supabase in production, give helpful error
   if (isProduction) {
-    throw new Error('Cannot save brand: Database storage required in production. Please set BRAND_USE_DB=true and ensure Supabase is configured.')
+    const missingVars = []
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missingVars.push('NEXT_PUBLIC_SUPABASE_URL')
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missingVars.push('SUPABASE_SERVICE_ROLE_KEY')
+    
+    throw new Error(
+      `Cannot save brand: Database storage required in production. ` +
+      `Missing environment variables: ${missingVars.join(', ')}. ` +
+      `Please set these in Vercel Dashboard → Settings → Environment Variables and redeploy.`
+    )
   }
 
   try {
