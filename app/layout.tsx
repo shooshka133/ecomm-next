@@ -79,7 +79,7 @@ async function Footer() {
   const footerCopyright = brandConfig?.footer?.copyright || getFooterCopyright()
   const footerLinks = brandConfig?.footer?.links || getFooterLinks()
   const socialLinks = brandConfig?.social || getSocialLinks()
-  const logoUrl = brandConfig?.logoUrl || getLogoUrl()
+  const logoUrl: string = (brandConfig?.logoUrl || getLogoUrl()) as string
   const brandColors = brandConfig?.colors || getBrandColors()
 
   return (
