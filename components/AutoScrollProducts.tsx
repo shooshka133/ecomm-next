@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Product } from '@/types'
 import { getBrandColors } from '@/lib/brand'
@@ -11,7 +11,23 @@ interface AutoScrollProductsProps {
 
 export default function AutoScrollProducts({ products }: AutoScrollProductsProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const brandColors = getBrandColors()
+  const [brandConfig, setBrandConfig] = useState<any>(null)
+  
+  // Fetch brand config from API (domain-based)
+  useEffect(() => {
+    fetch('/api/brand-config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.brand) {
+          setBrandConfig(data.brand)
+        }
+      })
+      .catch(error => {
+        console.warn('Failed to load brand config, using static:', error)
+      })
+  }, [])
+  
+  const brandColors = brandConfig?.colors || getBrandColors()
 
   useEffect(() => {
     const scrollContainer = scrollRef.current

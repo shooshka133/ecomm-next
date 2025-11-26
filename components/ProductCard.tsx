@@ -33,8 +33,25 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [wishlistLoading, setWishlistLoading] = useState(false)
   const [showFullDescription, setShowFullDescription] = useState(false)
+  const [brandConfig, setBrandConfig] = useState<any>(null)
   const supabase = createSupabaseClient()
-  const brandColors = getBrandColors()
+  
+  // Fetch brand config from API (domain-based)
+  useEffect(() => {
+    fetch('/api/brand-config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.brand) {
+          setBrandConfig(data.brand)
+        }
+      })
+      .catch(error => {
+        console.warn('Failed to load brand config, using static:', error)
+      })
+  }, [])
+  
+  // Get brand colors (dynamic or fallback to static)
+  const brandColors = brandConfig?.colors || getBrandColors()
   
   // Check if description is long enough to need truncation (approximately 3-4 lines)
   // Lower threshold to ensure more products show the read more button

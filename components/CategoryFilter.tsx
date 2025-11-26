@@ -1,7 +1,7 @@
 'use client'
 
 import { Product } from '@/types'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getBrandColors } from '@/lib/brand'
 
 interface CategoryFilterProps {
@@ -11,9 +11,25 @@ interface CategoryFilterProps {
 }
 
 export default function CategoryFilter({ products, selectedCategory, onCategoryChange }: CategoryFilterProps) {
+  const [brandConfig, setBrandConfig] = useState<any>(null)
+  
+  // Fetch brand config from API (domain-based)
+  useEffect(() => {
+    fetch('/api/brand-config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.brand) {
+          setBrandConfig(data.brand)
+        }
+      })
+      .catch(error => {
+        console.warn('Failed to load brand config, using static:', error)
+      })
+  }, [])
+  
   // Get unique categories from products
   const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean))) as string[]
-  const brandColors = getBrandColors()
+  const brandColors = brandConfig?.colors || getBrandColors()
 
   return (
     <div className="flex flex-wrap gap-3 justify-center mb-8">
