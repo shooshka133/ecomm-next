@@ -10,37 +10,64 @@ Now the code is using the **database** (which is empty) instead of the **file** 
 
 ## ✅ Solution: Migrate Brands from File to Database
 
-### Step 1: Check if You Have Brands in File
+I found **2 brands** in your file:
+- ✅ "Ecommerce Start" (default, active)
+- ✅ "Green Theme Store" (test-green-store, inactive)
 
-1. **Check the file:**
-   - File: `data/brands/brands.json`
-   - If it exists and has brands, we'll migrate them
+---
 
-### Step 2: Migrate Brands to Database
+### Option A: Use Migration Script (Recommended)
 
-**Option A: Using SQL (If you have the brand data)**
+1. **Make sure environment variables are set:**
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_main_project_url
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   ```
+
+2. **Run the migration script:**
+   ```bash
+   npx tsx scripts/migrate-brands-to-db.ts
+   ```
+
+3. **The script will:**
+   - ✅ Read brands from `data/brands/brands.json`
+   - ✅ Insert them into the database
+   - ✅ Skip brands that already exist
+   - ✅ Show a summary
+
+---
+
+### Option B: Manual SQL Migration
 
 1. **Go to Main Supabase Project → SQL Editor**
 
-2. **If you have brand data, insert it:**
+2. **Run this SQL** (for "Ecommerce Start" brand):
    ```sql
-   INSERT INTO brands (slug, name, is_active, config, asset_urls)
+   INSERT INTO brands (slug, name, is_active, config, asset_urls, created_at, updated_at)
    VALUES (
-     'grocery-store',
-     'Shooshka Grocery',
-     false,
-     '{"name": "Shooshka Grocery", "colors": {...}}'::jsonb,
-     '{}'::jsonb
+     'default',
+     'Ecommerce Start',
+     true,
+     '{"name": "Ecommerce Start", "slogan": "Your trusted destination for quality products and exceptional service.", "logoUrl": "/icon.svg", "colors": {"primary": "#4F46E5", "accent": "#7C3AED", "secondary": "#6366F1", "background": "#F9FAFB", "text": "#111827"}, "fontFamily": {"primary": "Inter, sans-serif", "heading": "Poppins, sans-serif"}, "domain": "store.shooshka.online", "contactEmail": "support@example.com", "adminEmails": ["admin@example.com"], "seo": {"title": "Ecommerce Start - Modern Shopping Experience", "description": "Discover amazing products at great prices", "keywords": "ecommerce, shopping, products, online store"}, "hero": {"title": "Welcome to Ecommerce Start", "subtitle": "Discover amazing products at unbeatable prices. Shop the latest trends and technology with confidence.", "ctaText": "Shop Now", "badge": "Premium Quality Products"}}'::jsonb,
+     '{}'::jsonb,
+     NOW(),
+     NOW()
    );
    ```
 
-**Option B: Just Create New Brands (Easier)**
+3. **For "Green Theme Store"** (if you want it):
+   - Use the data from `data/brands/brands.json` (line 118-241)
+   - Convert to SQL INSERT statement
 
-Since the table is empty, just create your brands fresh:
+---
+
+### Option C: Just Create New Brands (Easier)
+
+Since you have the data, just recreate them:
 
 1. **Go to:** `/admin/brand-settings`
 2. **Click:** "Create Brand"
-3. **Fill in the form** (use values from `GROCERY_BRAND_QUICK_REFERENCE.md`)
+3. **Fill in the form** using values from the file
 4. **Save** - Will be stored in database now ✅
 
 ---
