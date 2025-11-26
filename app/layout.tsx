@@ -24,6 +24,17 @@ export async function generateMetadata(): Promise<Metadata> {
   
   try {
     const brandConfig = await getActiveBrandConfig(domain)
+    
+    // Debug logging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Layout Metadata]', {
+        domain,
+        brandName: brandConfig.name,
+        seoTitle: brandConfig.seo?.title,
+        faviconUrl: brandConfig.faviconUrl,
+      })
+    }
+    
     return {
       title: brandConfig.seo?.title || getSeoTitle(),
       description: brandConfig.seo?.description || getSeoDescription(),
@@ -34,6 +45,7 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     }
   } catch (error) {
+    console.error('[Layout Metadata] Error loading brand config:', error)
     // Fallback to static config
     return {
       title: getSeoTitle(),
@@ -82,10 +94,14 @@ async function Footer() {
                   background: `linear-gradient(to bottom right, ${brandColors.primary || '#10B981'}, ${brandColors.accent || '#059669'})`
                 }}
               >
-                {logoUrl && logoUrl !== '/icon.svg' ? (
-                  <img src={logoUrl} alt={brandName} className="w-full h-full object-contain rounded-lg" />
+                {logoUrl && logoUrl !== '/icon.svg' && logoUrl.trim() !== '' ? (
+                  <img 
+                    src={logoUrl} 
+                    alt={brandName} 
+                    className="w-full h-full object-contain rounded-lg"
+                  />
                 ) : (
-                  <span className="text-white font-bold text-xl">E</span>
+                  <span className="text-white font-bold text-xl">{brandName.charAt(0).toUpperCase()}</span>
                 )}
               </div>
               <span className="text-xl font-bold">{brandName}</span>
@@ -173,14 +189,45 @@ async function Footer() {
   )
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Get brand config for title script
+  const headersList = await headers()
+  const domain = getDomainFromRequest(headersList)
+  let titleScript = ''
+  
+  try {
+    const brandConfig = await getActiveBrandConfig(domain)
+    const title = brandConfig?.seo?.title || getSeoTitle()
+    titleScript = `
+      (function() {
+        // Set title immediately to prevent flash
+        if (document.title !== "${title.replace(/"/g, '\\"')}") {
+          document.title = "${title.replace(/"/g, '\\"')}";
+        }
+      })();
+    `
+  } catch (error) {
+    // Fallback to default title
+    const defaultTitle = getSeoTitle()
+    titleScript = `
+      (function() {
+        document.title = "${defaultTitle.replace(/"/g, '\\"')}";
+      })();
+    `
+  }
+  
   return (
     <html lang="en" className={poppins.variable}>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: titleScript,
+          }}
+        />
         {/* Suppress extension-related errors */}
         <script
           dangerouslySetInnerHTML={{
