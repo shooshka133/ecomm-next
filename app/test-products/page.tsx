@@ -14,7 +14,7 @@ export default function TestProductsPage() {
         const configRes = await fetch('/api/supabase-config')
         const config = await configRes.json()
         
-        setStatus(prev => ({ ...prev, config }))
+        setStatus((prev: any) => ({ ...prev, config }))
 
         if (config.success && config.supabaseUrl && config.supabaseKey) {
           // Create client
@@ -26,7 +26,7 @@ export default function TestProductsPage() {
             .select('*')
             .limit(5)
 
-          setStatus(prev => ({
+          setStatus((prev: any) => ({
             ...prev,
             productsQuery: {
               success: !error,
@@ -42,9 +42,9 @@ export default function TestProductsPage() {
           }
         }
       } catch (error: any) {
-        setStatus(prev => ({ ...prev, error: error.message }))
+        setStatus((prev: any) => ({ ...prev, error: error.message }))
       } finally {
-        setStatus(prev => ({ ...prev, loading: false }))
+        setStatus((prev: any) => ({ ...prev, loading: false }))
       }
     }
 
