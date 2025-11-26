@@ -240,60 +240,89 @@ export default async function RootLayout({
       (function() {
         var targetTitle = "${escapedTitle}";
         
-        // Set title immediately
-        if (document.title !== targetTitle) {
-          document.title = targetTitle;
+        // ULTRA-AGGRESSIVE: Override document.title setter to ALWAYS use our title
+        try {
+          var titleDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, 'title');
+          if (titleDescriptor) {
+            var originalGetter = titleDescriptor.get;
+            var originalSetter = titleDescriptor.set;
+            Object.defineProperty(document, 'title', {
+              get: function() {
+                return originalGetter ? originalGetter.call(this) : targetTitle;
+              },
+              set: function(value) {
+                // Always set to our target title, ignore any other values
+                if (originalSetter) {
+                  originalSetter.call(this, targetTitle);
+                }
+              },
+              configurable: true
+            });
+          }
+        } catch(e) {
+          // Fallback if override fails
         }
         
-        // Watch for title changes and immediately revert (prevents Next.js from overwriting)
-        var titleObserver = new MutationObserver(function(mutations) {
-          if (document.title !== targetTitle) {
-            document.title = targetTitle;
-          }
-        });
-        
-        // Start observing title changes
-        if (document.head) {
-          var titleElement = document.querySelector('title');
-          if (titleElement) {
-            titleObserver.observe(titleElement, { childList: true, characterData: true, subtree: true });
-          }
-        }
-        
-        // Also set on DOMContentLoaded and immediately after
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function() {
+        // Set title immediately (multiple times to catch any timing issues)
+        function setTitleNow() {
+          try {
             if (document.title !== targetTitle) {
               document.title = targetTitle;
             }
-          });
+          } catch(e) {}
         }
         
-        // Set brand colors immediately to prevent flash
-        const root = document.documentElement;
-        ${colors.primary ? `root.style.setProperty('--brand-primary', '${colors.primary}');` : ''}
-        ${colors.accent ? `root.style.setProperty('--brand-accent', '${colors.accent}');` : ''}
-        ${colors.secondary ? `root.style.setProperty('--brand-secondary', '${colors.secondary}');` : ''}
-        ${colors.background ? `root.style.setProperty('--brand-background', '${colors.background}');` : ''}
-        ${colors.text ? `root.style.setProperty('--brand-text', '${colors.text}');` : ''}
+        // Set immediately
+        setTitleNow();
         
-        // Convert primary color to RGB for rgba usage
-        ${colors.primary ? `
-        const primaryHex = '${colors.primary}'.replace('#', '');
-        if (primaryHex.length === 6) {
-          const r = parseInt(primaryHex.substring(0, 2), 16);
-          const g = parseInt(primaryHex.substring(2, 4), 16);
-          const b = parseInt(primaryHex.substring(4, 6), 16);
-          root.style.setProperty('--brand-primary-rgb', r + ', ' + g + ', ' + b);
-        }
-        ` : ''}
-        
-        // Use requestAnimationFrame to set title again after Next.js might have set it
-        requestAnimationFrame(function() {
-          if (document.title !== targetTitle) {
-            document.title = targetTitle;
+        // Watch for title element changes
+        var titleObserver = null;
+        function startObserving() {
+          if (document.head) {
+            var titleElement = document.querySelector('title');
+            if (titleElement && !titleObserver) {
+              titleObserver = new MutationObserver(function() {
+                setTitleNow();
+              });
+              titleObserver.observe(titleElement, { 
+                childList: true, 
+                characterData: true, 
+                subtree: true
+              });
+            }
           }
+        }
+        
+        // Start observing immediately
+        startObserving();
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            setTitleNow();
+            startObserving();
+          }, true);
+        }
+        
+        // Set on multiple events
+        ['DOMContentLoaded', 'load'].forEach(function(event) {
+          document.addEventListener(event, setTitleNow, true);
         });
+        
+        // Set repeatedly for first 500ms (catches any delayed changes)
+        var attempts = 0;
+        var titleInterval = setInterval(function() {
+          setTitleNow();
+          attempts++;
+          if (attempts > 10) { // Stop after 500ms (10 * 50ms)
+            clearInterval(titleInterval);
+          }
+        }, 50);
+        
+        // Multiple requestAnimationFrame calls
+        if (typeof requestAnimationFrame !== 'undefined') {
+          requestAnimationFrame(setTitleNow);
+          setTimeout(function() { requestAnimationFrame(setTitleNow); }, 0);
+          setTimeout(function() { requestAnimationFrame(setTitleNow); }, 10);
+        }
       })();
     `
   } catch (error) {
@@ -332,20 +361,21 @@ export default async function RootLayout({
   return (
     <html lang="en" className={poppins.variable}>
       <head>
-        {/* Critical: Inject brand config as JSON for immediate client-side access */}
+        {/* CRITICAL: These must be FIRST to prevent any flash */}
+        {/* 1. Set colors via inline CSS - runs before any rendering */}
+        <style dangerouslySetInnerHTML={{ __html: inlineStyles }} />
+        {/* 2. Set title IMMEDIATELY - blocking script that runs before page renders */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: initScript,
+          }}
+        />
+        {/* 3. Inject brand config as JSON for client-side access */}
         <script
           type="application/json"
           id="__BRAND_CONFIG__"
           dangerouslySetInnerHTML={{
             __html: brandConfigJson,
-          }}
-        />
-        {/* Critical: Set colors via inline CSS BEFORE any rendering */}
-        <style dangerouslySetInnerHTML={{ __html: inlineStyles }} />
-        {/* Critical: Set title and watch for changes */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: initScript,
           }}
         />
         {/* Suppress extension-related errors */}
