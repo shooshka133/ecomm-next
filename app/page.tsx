@@ -22,7 +22,8 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 24; // Increased from 12 to show more products
-  const [supabase, setSupabase] = useState(createSupabaseClient());
+  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseClient> | null>(null);
+  const [supabaseReady, setSupabaseReady] = useState(false);
   
   // Get brand hero configuration
   const heroTitle = getHeroTitle();
@@ -54,7 +55,7 @@ export default function Home() {
     }
 
     const authSuccess = searchParams.get('auth');
-    if (authSuccess === 'success') {
+    if (authSuccess === 'success' && supabase) {
       // Force refresh the session after OAuth callback
       const refreshSession = async () => {
         try {
@@ -72,10 +73,12 @@ export default function Home() {
           } else {
             // No session yet, try once more after a delay
             setTimeout(async () => {
-              const { data: { session: retrySession } } = await supabase.auth.getSession();
-              if (retrySession) {
-                router.replace('/');
-                router.refresh();
+              if (supabase) {
+                const { data: { session: retrySession } } = await supabase.auth.getSession();
+                if (retrySession) {
+                  router.replace('/');
+                  router.refresh();
+                }
               }
             }, 1000);
           }
@@ -99,7 +102,11 @@ export default function Home() {
   }, [searchParams]);
 
   useEffect(() => {
-    // Get domain-based Supabase client
+    // Clear products and set loading when initializing
+    setProducts([])
+    setLoading(true)
+    
+    // Get domain-based Supabase client BEFORE loading products
     const initSupabase = async () => {
       try {
         const response = await fetch('/api/supabase-config')
@@ -120,13 +127,19 @@ export default function Home() {
           const domainClient = createClient(data.supabaseUrl, data.supabaseKey)
           console.log('[Homepage] Created domain-based Supabase client for:', data.brandSlug)
           setSupabase(domainClient)
+          setSupabaseReady(true)
         } else {
           console.warn('[Homepage] Failed to get Supabase config, using default client')
+          // Fallback to default client
+          setSupabase(createSupabaseClient())
+          setSupabaseReady(true)
         }
       } catch (error: any) {
         console.error('[Homepage] Error initializing domain-based Supabase client:', error)
         console.warn('[Homepage] Using default Supabase client (main project). This is OK if /api/supabase-config is not deployed yet.')
-        // Keep default client - this will use main Supabase project
+        // Fallback to default client
+        setSupabase(createSupabaseClient())
+        setSupabaseReady(true)
       }
     }
     
@@ -134,13 +147,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (supabase) {
+    if (supabase && supabaseReady) {
       console.log('[Homepage] Supabase client ready, loading products...')
       loadProducts();
     } else {
       console.log('[Homepage] Waiting for Supabase client...')
     }
-  }, [supabase]);
+  }, [supabase, supabaseReady]);
 
   const loadProducts = async () => {
     try {
