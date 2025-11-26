@@ -194,10 +194,11 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Get brand config for title and colors script
+  // Get brand config once for both script and styles
   const headersList = await headers()
   const domain = getDomainFromRequest(headersList)
   let initScript = ''
+  let inlineStyles = ''
   
   try {
     const brandConfig = await getActiveBrandConfig(domain)
@@ -206,6 +207,29 @@ export default async function RootLayout({
     
     // Escape title for JS
     const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'")
+    
+    // Generate inline CSS with brand colors to prevent flash
+    inlineStyles = `
+      :root {
+        --brand-primary: ${colors.primary || '#4F46E5'};
+        --brand-accent: ${colors.accent || '#7C3AED'};
+        --brand-secondary: ${colors.secondary || '#6366F1'};
+        --brand-background: ${colors.background || '#FFFFFF'};
+        --brand-text: ${colors.text || '#1F2937'};
+    `
+    
+    // Convert primary to RGB
+    if (colors.primary) {
+      const hex = colors.primary.replace('#', '')
+      if (hex.length === 6) {
+        const r = parseInt(hex.substring(0, 2), 16)
+        const g = parseInt(hex.substring(2, 4), 16)
+        const b = parseInt(hex.substring(4, 6), 16)
+        inlineStyles += `        --brand-primary-rgb: ${r}, ${g}, ${b};`
+      }
+    }
+    
+    inlineStyles += `\n      }`
     
     initScript = `
       (function() {
@@ -282,12 +306,23 @@ export default async function RootLayout({
         root.style.setProperty('--brand-text', '${defaultColors.text}');
       })();
     `
+    inlineStyles = `
+      :root {
+        --brand-primary: ${defaultColors.primary};
+        --brand-accent: ${defaultColors.accent};
+        --brand-secondary: ${defaultColors.secondary};
+        --brand-background: ${defaultColors.background};
+        --brand-text: ${defaultColors.text};
+      }
+    `
   }
   
   return (
     <html lang="en" className={poppins.variable}>
       <head>
-        {/* Critical: Set title and colors BEFORE any other scripts */}
+        {/* Critical: Set colors via inline CSS BEFORE any rendering */}
+        <style dangerouslySetInnerHTML={{ __html: inlineStyles }} />
+        {/* Critical: Set title and watch for changes */}
         <script
           dangerouslySetInnerHTML={{
             __html: initScript,
