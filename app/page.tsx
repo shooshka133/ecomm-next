@@ -156,6 +156,11 @@ export default function Home() {
   }, [supabase, supabaseReady]);
 
   const loadProducts = async () => {
+    if (!supabase) {
+      console.warn('[Homepage] Cannot load products: Supabase client not ready')
+      return
+    }
+    
     try {
       setLoading(true)
       
