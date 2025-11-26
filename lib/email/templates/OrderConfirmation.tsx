@@ -29,6 +29,9 @@ interface OrderConfirmationEmailProps {
   estimatedDelivery?: string
   orderUrl?: string
   orderId?: string
+  brandName?: string
+  contactEmail?: string
+  primaryColor?: string
 }
 
 export default function OrderConfirmationEmail({

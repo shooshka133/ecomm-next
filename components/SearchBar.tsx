@@ -56,7 +56,6 @@ export default function SearchBar({ products }: SearchBarProps) {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={() => setIsFocused(true)}
           placeholder="Search for products..."
           className="w-full pl-12 pr-12 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 outline-none transition-all text-lg"
           style={{
@@ -64,6 +63,7 @@ export default function SearchBar({ products }: SearchBarProps) {
             '--focus-ring': `${brandColors.primary || '#10B981'}20`
           } as React.CSSProperties}
           onFocus={(e) => {
+            setIsFocused(true)
             e.currentTarget.style.borderColor = brandColors.primary || '#10B981'
             e.currentTarget.style.boxShadow = `0 0 0 2px ${brandColors.primary || '#10B981'}20`
           }}

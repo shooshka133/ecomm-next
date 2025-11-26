@@ -10,13 +10,13 @@
  * - const stripe = await getStripeClient()
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import Stripe from 'stripe'
 import { getActiveBrand } from '@/lib/brand/storage'
 
 // Cache clients to avoid recreating
-let supabaseClientCache: Map<string, ReturnType<typeof createClient>> = new Map()
+let supabaseClientCache: Map<string, SupabaseClient<any, "public", any>> = new Map()
 let resendClientCache: Map<string, Resend> = new Map()
 let stripeClientCache: Map<string, Stripe> = new Map()
 
