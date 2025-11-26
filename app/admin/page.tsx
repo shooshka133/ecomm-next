@@ -257,16 +257,16 @@ export default function AdminPage() {
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
             <p className="text-gray-600">Manage orders, products, and store operations</p>
           </div>
           <Link
             href="/admin/brand-settings"
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors flex items-center gap-2 shadow-md"
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-colors flex items-center gap-2 shadow-lg font-semibold text-lg whitespace-nowrap"
           >
-            <Palette className="w-4 h-4" />
+            <Palette className="w-5 h-5" />
             Brand Settings
           </Link>
         </div>
@@ -361,10 +361,10 @@ export default function AdminPage() {
         <div className="flex flex-wrap gap-4">
           <Link
             href="/admin/brand-settings"
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors shadow-md"
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors shadow-lg font-semibold text-base"
           >
-            <Palette className="w-4 h-4" />
-            <span>Brand Settings</span>
+            <Palette className="w-5 h-5" />
+            <span>🎨 Brand Settings</span>
           </Link>
           <Link
             href="/admin/emails"
