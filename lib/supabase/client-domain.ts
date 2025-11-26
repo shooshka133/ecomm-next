@@ -61,7 +61,7 @@ export async function createDomainSupabaseClient(): Promise<SupabaseClient> {
   }
   
   // Fallback to default client
-  return createClientComponentClient() as SupabaseClient
+  return createClientComponentClient() as unknown as SupabaseClient
 }
 
 /**
