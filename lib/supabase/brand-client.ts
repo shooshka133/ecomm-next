@@ -97,8 +97,12 @@ export async function createSupabaseServerClient(
   })
 }
 
+// Cache clients by brand slug to prevent multiple instances
+const clientCache = new Map<string, SupabaseClient>()
+
 /**
  * Create Supabase client for client components
+ * Uses caching to prevent multiple instances for the same brand
  * 
  * @param brandSlug - Brand slug (e.g., "grocery-store")
  * @param brandConfig - Brand configuration object (optional, will be read from __BRAND_CONFIG__ if not provided)
@@ -121,6 +125,14 @@ export function createSupabaseClient(
     }
   }
 
+  // Create cache key from brand slug or config URL
+  const cacheKey = brandSlug || brandConfig?.supabase?.url || 'default'
+  
+  // Return cached client if available
+  if (clientCache.has(cacheKey)) {
+    return clientCache.get(cacheKey)!
+  }
+
   const config = getSupabaseConfigForBrand(brandSlug, brandConfig)
 
   // For client components, we prefer createClientComponentClient for auth handling
@@ -129,19 +141,25 @@ export function createSupabaseClient(
   const mainUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const mainKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
+  let client: SupabaseClient
+
   if (config.url === mainUrl && config.anonKey === mainKey) {
     // Use the Next.js helper for proper cookie handling
-    return createClientComponentClient() as unknown as SupabaseClient
+    client = createClientComponentClient() as unknown as SupabaseClient
+  } else {
+    // Custom Supabase project - use createClient directly
+    client = createClient(config.url, config.anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
   }
 
-  // Custom Supabase project - use createClient directly
-  return createClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  })
+  // Cache the client
+  clientCache.set(cacheKey, client)
+  return client
 }
 
 /**

@@ -1,8 +1,9 @@
 'use client'
 
 import Link from "next/link";
-import { useBrandSupabaseClient } from "@/lib/supabase/brand-client";
+import { createSupabaseClient } from "@/lib/supabase/brand-client";
 import ProductGrid from "@/components/ProductGrid";
+import { SupabaseClient } from "@supabase/supabase-js";
 import SearchBar from "@/components/SearchBar";
 import CategoryFilter from "@/components/CategoryFilter";
 import Pagination from "@/components/Pagination";
@@ -24,18 +25,25 @@ export default function Home() {
   const productsPerPage = 24; // Increased from 12 to show more products
   // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
   const [brandConfig, setBrandConfig] = useState<any>(null);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   
   // Prevent multiple simultaneous loads and blinking
   const loadingRef = useRef(false);
   const loadedBrandSlugRef = useRef<string | null>(null);
   
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     // NO CLIENT-SIDE FETCHING - prevents flashing
     try {
       const configScript = document.getElementById('__BRAND_CONFIG__')
       if (configScript && configScript.textContent) {
         const config = JSON.parse(configScript.textContent)
         setBrandConfig(config)
+        
+        // Initialize Supabase client with brand config
+        const client = createSupabaseClient(config?.slug || null, config)
+        setSupabase(client)
         return // Use server-injected config, no need to fetch
       }
     } catch (error) {
@@ -44,14 +52,17 @@ export default function Home() {
       }
     }
     
+    // If server-injected config is not available, initialize with default
+    if (typeof window !== 'undefined') {
+      const client = createSupabaseClient(null, null)
+      setSupabase(client)
+    }
+    
     // If server-injected config is not available, this is a configuration error
     if (process.env.NODE_ENV === 'development') {
       console.warn('[Homepage] Server-injected brand config not found. This should not happen.')
     }
   }, []);
-
-  // Use brand-aware Supabase client
-  const supabase = useBrandSupabaseClient();
   
   // Get brand hero configuration (dynamic or fallback to static)
   const heroTitle = brandConfig?.hero?.title || getHeroTitle();
