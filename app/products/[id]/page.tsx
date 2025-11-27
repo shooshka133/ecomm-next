@@ -2,18 +2,28 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useBrandSupabaseClient } from '@/lib/supabase/brand-client'
 import { Product } from '@/types'
 import { useAuth } from '@/components/AuthProvider'
 import { ShoppingCart, Check, Heart, ArrowLeft, Minus, Plus, Tag, Grid, Home } from 'lucide-react'
 import Link from 'next/link'
-import { getBrandColors } from '@/lib/brand'
 
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
-  const brandColors = getBrandColors()
+  const supabase = useBrandSupabaseClient()
+  
+  // Use CSS variables for brand colors (set by inline styles in layout.tsx)
+  const brandColors = {
+    primary: typeof window !== 'undefined' 
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#4F46E5'
+      : '#4F46E5',
+    accent: typeof window !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-accent').trim() || '#7C3AED'
+      : '#7C3AED',
+  }
+  
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
@@ -22,11 +32,12 @@ export default function ProductDetailPage() {
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [wishlistLoading, setWishlistLoading] = useState(false)
   const [showFullDescription, setShowFullDescription] = useState(false)
-  const supabase = createSupabaseClient()
 
   useEffect(() => {
-    loadProduct()
-  }, [params.id])
+    if (supabase) {
+      loadProduct()
+    }
+  }, [params.id, supabase])
 
   const checkWishlistStatus = useCallback(async () => {
     if (!user || !product) {
@@ -141,19 +152,34 @@ export default function ProductDetailPage() {
   }
 
   const loadProduct = async () => {
+    if (!supabase) {
+      console.warn('[ProductDetail] Supabase client not ready')
+      setLoading(false)
+      return
+    }
+    
     try {
+      console.log('[ProductDetail] Loading product:', params.id)
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('id', params.id)
         .single()
 
-      if (error) throw error
-      setProduct(data)
-    } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error loading product:', error)
+      if (error) {
+        console.error('[ProductDetail] Supabase error:', error)
+        throw error
       }
+      
+      if (data) {
+        console.log('[ProductDetail] Product loaded:', data.name)
+        setProduct(data)
+      } else {
+        console.warn('[ProductDetail] Product not found:', params.id)
+      }
+    } catch (error) {
+      console.error('[ProductDetail] Error loading product:', error)
+      setProduct(null)
     } finally {
       setLoading(false)
     }
