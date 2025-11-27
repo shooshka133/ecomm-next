@@ -428,7 +428,7 @@ export default function BrandEditor({ brand: initialBrand, onSave, onClose }: Br
                 pattern="^eyJ.*"
               />
               <p className="mt-1 text-xs text-gray-500">
-                Public anon key from your Supabase project settings (starts with "eyJ")
+                Public anon key from your Supabase project settings (starts with &quot;eyJ&quot;)
               </p>
             </div>
 
