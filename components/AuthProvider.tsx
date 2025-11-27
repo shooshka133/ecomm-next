@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
-import { useBrandSupabaseClient } from '@/lib/supabase/brand-client'
+import { User, SupabaseClient } from '@supabase/supabase-js'
+import { createSupabaseClient } from '@/lib/supabase/brand-client'
 
 interface AuthContextType {
   user: User | null
@@ -21,9 +21,39 @@ export const useAuth = () => useContext(AuthContext)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = useBrandSupabaseClient()
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
+
+  // Initialize Supabase client only on client side
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Read brand config from server-injected JSON
+        let brandConfig: any = null
+        try {
+          const configScript = document.getElementById('__BRAND_CONFIG__')
+          if (configScript && configScript.textContent) {
+            brandConfig = JSON.parse(configScript.textContent)
+          }
+        } catch (error) {
+          console.warn('Failed to read brand config for AuthProvider:', error)
+        }
+        
+        // Create brand-aware Supabase client
+        const client = createSupabaseClient(brandConfig?.slug || null, brandConfig)
+        setSupabase(client)
+      } catch (error) {
+        console.error('Error initializing Supabase client:', error)
+        setLoading(false)
+      }
+    }
+  }, [])
 
   useEffect(() => {
+    if (!supabase) {
+      // Wait for Supabase client to be initialized
+      return
+    }
+
     // Get initial session
     const initializeSession = async () => {
       try {
@@ -66,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   const signOut = async () => {
+    if (!supabase) return
     try {
       await supabase.auth.signOut()
       setUser(null)
