@@ -117,7 +117,7 @@ export default function Navbar() {
   }, [user])
 
   useEffect(() => {
-    if (user) {
+    if (user && supabase) {
       loadCartCount()
       checkAdminStatus()
       
