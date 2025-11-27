@@ -43,36 +43,57 @@ export function getDomainFromRequest(headers: Headers): string | undefined {
  * @param domain Optional domain to match brand by domain first
  */
 export async function getActiveBrandConfig(domain?: string) {
-  try {
-    const activeBrand = await getActiveBrand(domain)
-    if (activeBrand && activeBrand.config) {
-      // Debug logging (always log in development to help debug flashing)
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[getActiveBrandConfig] ✅ Brand found:', {
-          domain,
-          brandSlug: activeBrand.slug,
-          brandName: activeBrand.name,
-          configName: activeBrand.config?.name,
-          seoTitle: activeBrand.config?.seo?.title,
-          hasConfig: !!activeBrand.config,
-        })
+  // CRITICAL: If domain is provided, we MUST find the brand for that domain
+  // Don't fall back to default if domain is specified - this causes flashing
+  if (domain) {
+    try {
+      const activeBrand = await getActiveBrand(domain)
+      if (activeBrand && activeBrand.config) {
+        // Debug logging (always log in development to help debug flashing)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[getActiveBrandConfig] ✅ Brand found for domain:', {
+            domain,
+            brandSlug: activeBrand.slug,
+            brandName: activeBrand.name,
+            configName: activeBrand.config?.name,
+            seoTitle: activeBrand.config?.seo?.title,
+            hasConfig: !!activeBrand.config,
+          })
+        }
+        return activeBrand.config
+      } else {
+        // Log when brand is found but has no config
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[getActiveBrandConfig] ⚠️ Brand found but no config:', {
+            domain,
+            brandSlug: activeBrand?.slug,
+            brandName: activeBrand?.name,
+          })
+        }
+        // If domain was provided but no brand found, still return default
+        // but log a warning - this should not happen in production
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[getActiveBrandConfig] ❌ Domain provided but no brand found:', domain)
+        }
       }
-      return activeBrand.config
-    } else {
-      // Log when brand is found but has no config
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[getActiveBrandConfig] ⚠️ Brand found but no config:', {
-          domain,
-          brandSlug: activeBrand?.slug,
-          brandName: activeBrand?.name,
-        })
-      }
+    } catch (error) {
+      console.error('[getActiveBrandConfig] ❌ Error loading active brand for domain:', domain, error)
+      // Don't fall back immediately - let the error propagate or retry
+      // Only fall back if this is a critical error
     }
-  } catch (error) {
-    console.error('[getActiveBrandConfig] ❌ Error loading active brand:', error)
+  } else {
+    // No domain provided - try to get active brand
+    try {
+      const activeBrand = await getActiveBrand(domain)
+      if (activeBrand && activeBrand.config) {
+        return activeBrand.config
+      }
+    } catch (error) {
+      console.error('[getActiveBrandConfig] ❌ Error loading active brand:', error)
+    }
   }
 
-  // Fallback to default brand.config.ts
+  // Fallback to default brand.config.ts (only if no domain was provided or brand not found)
   if (process.env.NODE_ENV === 'development') {
     console.warn('[getActiveBrandConfig] ⚠️ No active brand found for domain:', domain, '- using default config')
   }

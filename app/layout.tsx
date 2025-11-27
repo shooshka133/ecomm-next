@@ -195,62 +195,79 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   // Get brand config ONCE on server - this ensures initial HTML is correct
+  // CRITICAL: Load brand config FIRST before any fallback initialization
   const headersList = await headers()
   const domain = getDomainFromRequest(headersList)
+  
+  // Load brand config immediately - don't initialize defaults first
+  let brandConfig: any = null
+  let activeBrand: any = null
   let initScript = ''
   let inlineStyles = ''
   let brandConfigJson = 'null'
-  let directTitle = getSeoTitle() // Initialize with default
+  let directTitle = ''
   
   try {
-    const brandConfig = await getActiveBrandConfig(domain)
-    const activeBrand = await getActiveBrandWithMetadata(domain)
-    const title = brandConfig?.seo?.title || getSeoTitle()
-    const colors = brandConfig?.colors || getBrandColors()
+    // Load brand config and metadata in parallel for speed
+    const [loadedBrandConfig, loadedActiveBrand] = await Promise.all([
+      getActiveBrandConfig(domain),
+      getActiveBrandWithMetadata(domain)
+    ])
     
-    // Set directTitle immediately (no second fetch needed)
-    directTitle = title
+    brandConfig = loadedBrandConfig
+    activeBrand = loadedActiveBrand
     
-    // Add brand metadata (slug, id) to config for client-side use
-    const fullBrandConfig = {
-      ...brandConfig,
-      slug: activeBrand?.slug || 'default',
-      id: activeBrand?.id || null,
-    }
+    // Only use loaded config if it's not the default fallback
+    // Check if this is actually a brand-specific config (not default)
+    const isDefaultBrand = !domain || (brandConfig?.name === brand.name && activeBrand?.slug === 'default')
     
-    // Serialize brand config for client-side use (prevents client-side fetching)
-    brandConfigJson = JSON.stringify(fullBrandConfig).replace(/</g, '\\u003c')
+    if (!isDefaultBrand && brandConfig && activeBrand) {
+      const title = brandConfig?.seo?.title || getSeoTitle()
+      const colors = brandConfig?.colors || getBrandColors()
+      
+      // Set directTitle immediately (no second fetch needed)
+      directTitle = title
     
-    // Escape title for JS
-    const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'")
-    
-    // Generate inline CSS with brand colors to prevent flash
-    // This is injected in <head> BEFORE any rendering, so colors are correct from start
-    inlineStyles = `
-      :root {
-        --brand-primary: ${colors.primary || '#4F46E5'};
-        --brand-accent: ${colors.accent || '#7C3AED'};
-        --brand-secondary: ${colors.secondary || '#6366F1'};
-        --brand-background: ${colors.background || '#FFFFFF'};
-        --brand-text: ${colors.text || '#1F2937'};
-    `
-    
-    // Convert primary to RGB
-    if (colors.primary) {
-      const hex = colors.primary.replace('#', '')
-      if (hex.length === 6) {
-        const r = parseInt(hex.substring(0, 2), 16)
-        const g = parseInt(hex.substring(2, 4), 16)
-        const b = parseInt(hex.substring(4, 6), 16)
-        inlineStyles += `        --brand-primary-rgb: ${r}, ${g}, ${b};`
+      // Add brand metadata (slug, id) to config for client-side use
+      const fullBrandConfig = {
+        ...brandConfig,
+        slug: activeBrand?.slug || 'default',
+        id: activeBrand?.id || null,
       }
-    }
-    
-    inlineStyles += `\n      }`
-    
-    // Use blocking script that runs synchronously - no async, no delays
-    // CRITICAL: Use the title we already fetched (no second fetch)
-    initScript = `
+      
+      // Serialize brand config for client-side use (prevents client-side fetching)
+      brandConfigJson = JSON.stringify(fullBrandConfig).replace(/</g, '\\u003c')
+      
+      // Escape title for JS
+      const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'")
+      
+      // Generate inline CSS with brand colors to prevent flash
+      // This is injected in <head> BEFORE any rendering, so colors are correct from start
+      inlineStyles = `
+        :root {
+          --brand-primary: ${colors.primary || '#4F46E5'};
+          --brand-accent: ${colors.accent || '#7C3AED'};
+          --brand-secondary: ${colors.secondary || '#6366F1'};
+          --brand-background: ${colors.background || '#FFFFFF'};
+          --brand-text: ${colors.text || '#1F2937'};
+      `
+      
+      // Convert primary to RGB
+      if (colors.primary) {
+        const hex = colors.primary.replace('#', '')
+        if (hex.length === 6) {
+          const r = parseInt(hex.substring(0, 2), 16)
+          const g = parseInt(hex.substring(2, 4), 16)
+          const b = parseInt(hex.substring(4, 6), 16)
+          inlineStyles += `        --brand-primary-rgb: ${r}, ${g}, ${b};`
+        }
+      }
+      
+      inlineStyles += `\n      }`
+      
+      // Use blocking script that runs synchronously - no async, no delays
+      // CRITICAL: Use the title we already fetched (no second fetch)
+      initScript = `
       (function() {
         var targetTitle = "${escapedTitle}";
         
@@ -297,16 +314,55 @@ export default async function RootLayout({
         }
       })();
     `
+    } else {
+      // Brand not found or is default - use fallback
+      const defaultTitle = getSeoTitle()
+      const defaultColors = getBrandColors()
+      const defaultBrand = {
+        name: getBrandName(),
+        colors: defaultColors,
+        seo: { title: defaultTitle },
+        slug: 'default',
+        id: null,
+      }
+      brandConfigJson = JSON.stringify(defaultBrand).replace(/</g, '\\u003c')
+      directTitle = defaultTitle
+      
+      initScript = `
+        (function() {
+          document.title = "${defaultTitle.replace(/"/g, '\\"')}";
+          const root = document.documentElement;
+          root.style.setProperty('--brand-primary', '${defaultColors.primary}');
+          root.style.setProperty('--brand-accent', '${defaultColors.accent}');
+          root.style.setProperty('--brand-secondary', '${defaultColors.secondary}');
+          root.style.setProperty('--brand-background', '${defaultColors.background}');
+          root.style.setProperty('--brand-text', '${defaultColors.text}');
+        })();
+      `
+      inlineStyles = `
+        :root {
+          --brand-primary: ${defaultColors.primary};
+          --brand-accent: ${defaultColors.accent};
+          --brand-secondary: ${defaultColors.secondary};
+          --brand-background: ${defaultColors.background};
+          --brand-text: ${defaultColors.text};
+        }
+      `
+    }
   } catch (error) {
-    // Fallback to default
+    // Error loading brand - use default but log error
+    console.error('[Layout] Error loading brand config:', error)
     const defaultTitle = getSeoTitle()
     const defaultColors = getBrandColors()
     const defaultBrand = {
       name: getBrandName(),
       colors: defaultColors,
       seo: { title: defaultTitle },
+      slug: 'default',
+      id: null,
     }
     brandConfigJson = JSON.stringify(defaultBrand).replace(/</g, '\\u003c')
+    directTitle = defaultTitle
     
     initScript = `
       (function() {
@@ -328,7 +384,11 @@ export default async function RootLayout({
         --brand-text: ${defaultColors.text};
       }
     `
-    directTitle = defaultTitle // Set for the direct <title> tag
+  }
+  
+  // Ensure directTitle is always set
+  if (!directTitle) {
+    directTitle = getSeoTitle()
   }
 
   return (
