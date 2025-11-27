@@ -12,9 +12,8 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+// Note: cookies() is imported dynamically inside functions that need it to avoid client/server conflicts
 
 /**
  * Get Supabase URL and anon key for a brand
@@ -182,7 +181,7 @@ export function getBrandConfigFromDOM(): any | null {
 export async function createSupabaseRouteHandlerClient(
   brandSlug?: string | null,
   brandConfig?: any,
-  cookieStore?: ReturnType<typeof cookies>
+  cookieStore?: any // Type: ReturnType<typeof cookies> but we can't import cookies at top level
 ): Promise<SupabaseClient> {
   const config = getSupabaseConfigForBrand(brandSlug, brandConfig)
 
@@ -193,6 +192,8 @@ export async function createSupabaseRouteHandlerClient(
   if (config.url === mainUrl && config.anonKey === mainKey) {
     // Use the Next.js helper for proper cookie handling
     if (!cookieStore) {
+      // Dynamically import cookies only when needed (server-side only)
+      const { cookies } = await import('next/headers')
       cookieStore = cookies()
     }
     return createRouteHandlerClient({ cookies: () => cookieStore! }) as unknown as SupabaseClient
