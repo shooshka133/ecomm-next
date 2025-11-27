@@ -219,7 +219,8 @@ export default async function RootLayout({
     
     // Only use loaded config if it's not the default fallback
     // Check if this is actually a brand-specific config (not default)
-    const isDefaultBrand = !domain || (brandConfig?.name === brand.name && activeBrand?.slug === 'default')
+    const defaultBrandName = getBrandName()
+    const isDefaultBrand = !domain || (brandConfig?.name === defaultBrandName && activeBrand?.slug === 'default')
     
     if (!isDefaultBrand && brandConfig && activeBrand) {
       const title = brandConfig?.seo?.title || getSeoTitle()
