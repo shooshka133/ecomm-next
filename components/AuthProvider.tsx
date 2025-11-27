@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useBrandSupabaseClient } from '@/lib/supabase/brand-client'
 
 interface AuthContextType {
   user: User | null
@@ -21,16 +21,19 @@ export const useAuth = () => useContext(AuthContext)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const supabase = useBrandSupabaseClient()
 
   useEffect(() => {
-    // Get Supabase client inside useEffect to ensure it's only created once
-    const supabase = createSupabaseClient()
-    
     // Get initial session
     const initializeSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setUser(session?.user ?? null)
+        setLoading(false)
+      } catch (error) {
+        console.error('Error initializing auth session:', error)
+        setLoading(false)
+      }
     }
     
     initializeSession()
@@ -60,12 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase])
 
   const signOut = async () => {
-    const supabase = createSupabaseClient()
-    await supabase.auth.signOut()
-    setUser(null)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   return (

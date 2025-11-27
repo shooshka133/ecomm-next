@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
+import { createSupabaseServerClient } from '@/lib/supabase/brand-client'
+import { getActiveBrandWithMetadata, getDomainFromRequest } from '@/lib/brand/admin-loader'
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
@@ -47,9 +49,28 @@ export async function GET(request: NextRequest) {
 
   // Handle OAuth code (works for both OAuth providers and email confirmation)
   try {
-    log('Creating Supabase client...')
+    log('Creating brand-aware Supabase client...')
+    
+    // Get brand info from domain to use correct Supabase project
+    const headersList = await headers()
+    const domain = getDomainFromRequest(headersList)
+    const activeBrand = await getActiveBrandWithMetadata(domain)
+    const brandConfig = activeBrand?.config
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
+    log('Brand info for auth:', {
+      domain,
+      brandSlug: activeBrand?.slug,
+      hasCustomSupabase: !!(brandConfig?.supabase?.url)
+    })
+    
+    // Use brand-aware route handler client for OAuth callback (handles cookies properly)
+    const { createSupabaseRouteHandlerClient } = await import('@/lib/supabase/brand-client')
+    const supabase = await createSupabaseRouteHandlerClient(
+      activeBrand?.slug || null,
+      brandConfig,
+      cookieStore
+    )
     
     log('Exchanging code for session...', { 
       codePrefix: code.substring(0, 20) + '...',

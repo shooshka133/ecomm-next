@@ -1,6 +1,6 @@
 'use client'
 
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useBrandSupabaseClient } from '@/lib/supabase/brand-client'
 
 export interface GoogleOAuthOptions {
   onSuccess?: () => void
@@ -17,6 +17,7 @@ export interface GoogleOAuthResult {
 /**
  * Client-side helper for Google OAuth sign-in
  * Initiates the OAuth flow and redirects to Google
+ * Uses brand-aware Supabase client to authenticate with correct Supabase project
  */
 export async function signInWithGoogle(
   options: GoogleOAuthOptions = {}
@@ -24,7 +25,22 @@ export async function signInWithGoogle(
   const { onSuccess, onError, redirectTo = '/' } = options
 
   try {
-    const supabase = createSupabaseClient()
+    // Get brand-aware Supabase client (will use correct Supabase project based on domain)
+    // Read brand config from server-injected JSON to determine which Supabase to use
+    let brandConfig: any = null
+    if (typeof window !== 'undefined') {
+      try {
+        const configScript = document.getElementById('__BRAND_CONFIG__')
+        if (configScript && configScript.textContent) {
+          brandConfig = JSON.parse(configScript.textContent)
+        }
+      } catch (error) {
+        console.warn('Failed to read brand config for OAuth:', error)
+      }
+    }
+    
+    const { createSupabaseClient } = await import('@/lib/supabase/brand-client')
+    const supabase = createSupabaseClient(brandConfig?.slug || null, brandConfig)
 
     // Ensure we're using a fresh OAuth flow
     // The PKCE code verifier is automatically managed by Supabase
@@ -104,8 +120,9 @@ export async function signInWithGoogle(
 export function isGoogleOAuthAvailable(): boolean {
   if (typeof window === 'undefined') return false
   try {
-    const supabase = createSupabaseClient()
-    return !!supabase
+    // Check if brand config is available (indicates brand-aware system is working)
+    const configScript = document.getElementById('__BRAND_CONFIG__')
+    return !!configScript
   } catch {
     return false
   }

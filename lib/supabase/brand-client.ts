@@ -13,6 +13,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 
 /**
@@ -170,7 +171,49 @@ export function getBrandConfigFromDOM(): any | null {
 }
 
 /**
+ * Create Supabase client for route handlers (API routes)
+ * Handles cookies properly for OAuth callbacks
+ * 
+ * @param brandSlug - Brand slug (e.g., "grocery-store")
+ * @param brandConfig - Brand configuration object
+ * @param cookieStore - Cookie store from next/headers
+ * @returns Supabase client configured for the brand with cookie support
+ */
+export async function createSupabaseRouteHandlerClient(
+  brandSlug?: string | null,
+  brandConfig?: any,
+  cookieStore?: ReturnType<typeof cookies>
+): Promise<SupabaseClient> {
+  const config = getSupabaseConfigForBrand(brandSlug, brandConfig)
+
+  // Check if this is the main Supabase (same URL as default)
+  const mainUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const mainKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+  if (config.url === mainUrl && config.anonKey === mainKey) {
+    // Use the Next.js helper for proper cookie handling
+    if (!cookieStore) {
+      cookieStore = cookies()
+    }
+    return createRouteHandlerClient({ cookies: () => cookieStore! }) as unknown as SupabaseClient
+  }
+
+  // Custom Supabase project - use createClient directly
+  // Note: For OAuth callbacks, we need to handle cookies manually
+  // The session will be stored in cookies by Supabase automatically
+  return createClient(config.url, config.anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    },
+  })
+}
+
+/**
  * Hook for client components to get brand-aware Supabase client
+ * Always returns a client (falls back to main Supabase if brand config not available)
  * 
  * Usage:
  * ```tsx
@@ -191,6 +234,7 @@ export function useBrandSupabaseClient(): SupabaseClient {
   const brandConfig = getBrandConfigFromDOM()
   const brandSlug = brandConfig?.slug || null
 
+  // Always returns a client (createSupabaseClient has fallback to main Supabase)
   return createSupabaseClient(brandSlug, brandConfig)
 }
 

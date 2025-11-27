@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useBrandSupabaseClient } from '@/lib/supabase/brand-client'
 import { signInWithGoogle } from '@/lib/auth/google'
 import { Mail, Lock, ArrowRight, KeyRound } from 'lucide-react'
 
@@ -19,7 +19,7 @@ export default function AuthPage() {
   const [errors, setErrors] = useState<{email?: string; password?: string; confirmPassword?: string}>({})
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createSupabaseClient()
+  const supabase = useBrandSupabaseClient()
   const retryInitiatedRef = useRef(false) // Prevent duplicate retries
 
   // Auto-retry OAuth if PKCE error occurred (incognito mode fix)
