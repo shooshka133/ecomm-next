@@ -6,8 +6,9 @@ import { useAuth } from './AuthProvider'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
-import { useBrandSupabaseClient } from '@/lib/supabase/brand-client'
+import { createSupabaseClient } from '@/lib/supabase/brand-client'
 import { getBrandName, getLogoUrl, getBrandColors } from '@/lib/brand'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // Helper to convert hex to rgba
 function hexToRgba(hex: string, alpha: number): string {
@@ -26,22 +27,34 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [brandConfig, setBrandConfig] = useState<any>(null)
-  const supabase = useBrandSupabaseClient()
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null)
   
-  // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
+  // Get brand config from server-injected JSON and initialize Supabase client
   // NO CLIENT-SIDE FETCHING - prevents flashing
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     try {
       const configScript = document.getElementById('__BRAND_CONFIG__')
       if (configScript && configScript.textContent) {
         const config = JSON.parse(configScript.textContent)
         setBrandConfig(config)
+        
+        // Initialize Supabase client with brand config
+        const client = createSupabaseClient(config?.slug || null, config)
+        setSupabase(client)
         return // Use server-injected config, no need to fetch
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('Failed to parse server-injected brand config:', error)
       }
+    }
+    
+    // If server-injected config is not available, initialize with default
+    if (typeof window !== 'undefined') {
+      const client = createSupabaseClient(null, null)
+      setSupabase(client)
     }
     
     // If server-injected config is not available, this is a configuration error
@@ -61,7 +74,7 @@ export default function Navbar() {
   const brandRest = brandNameParts.slice(1).join(' ') || 'Start'
 
   const loadCartCount = useCallback(async () => {
-    if (!user) {
+    if (!user || !supabase) {
       setCartCount(0)
       return
     }
@@ -137,7 +150,9 @@ export default function Navbar() {
       }, 2000)
 
       return () => {
-        supabase.removeChannel(channel)
+        if (supabase) {
+          supabase.removeChannel(channel)
+        }
         clearInterval(interval)
       }
     } else {
