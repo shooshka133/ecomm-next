@@ -200,12 +200,16 @@ export default async function RootLayout({
   let initScript = ''
   let inlineStyles = ''
   let brandConfigJson = 'null'
+  let directTitle = getSeoTitle() // Initialize with default
   
   try {
     const brandConfig = await getActiveBrandConfig(domain)
     const activeBrand = await getActiveBrandWithMetadata(domain)
     const title = brandConfig?.seo?.title || getSeoTitle()
     const colors = brandConfig?.colors || getBrandColors()
+    
+    // Set directTitle immediately (no second fetch needed)
+    directTitle = title
     
     // Add brand metadata (slug, id) to config for client-side use
     const fullBrandConfig = {
@@ -245,6 +249,7 @@ export default async function RootLayout({
     inlineStyles += `\n      }`
     
     // Use blocking script that runs synchronously - no async, no delays
+    // CRITICAL: Use the title we already fetched (no second fetch)
     initScript = `
       (function() {
         var targetTitle = "${escapedTitle}";
@@ -323,17 +328,7 @@ export default async function RootLayout({
         --brand-text: ${defaultColors.text};
       }
     `
-  }
-  
-  // Get title for direct injection
-  let directTitle = getSeoTitle()
-  try {
-    const headersList = await headers()
-    const domain = getDomainFromRequest(headersList)
-    const brandConfig = await getActiveBrandConfig(domain)
-    directTitle = brandConfig?.seo?.title || getSeoTitle()
-  } catch (error) {
-    // Fallback already set
+    directTitle = defaultTitle // Set for the direct <title> tag
   }
 
   return (

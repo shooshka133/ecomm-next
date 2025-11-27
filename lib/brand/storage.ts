@@ -156,6 +156,15 @@ export async function getBrandByDomain(domain: string): Promise<BrandData | null
         const subdomain = domain.split('.')[0]
         
         if (subdomain && subdomain !== 'localhost' && subdomain !== 'www') {
+          // Debug logging for subdomain matching
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[getBrandByDomain] Trying subdomain match:', {
+              domain,
+              subdomain,
+              lookingFor: `brands with domain starting with "${subdomain}."`
+            })
+          }
+          
           // Get all brands and match by subdomain
           const { data: allBrands, error: allError } = await supabase
             .from('brands')
@@ -167,7 +176,19 @@ export async function getBrandByDomain(domain: string): Promise<BrandData | null
             const matchedBrand = allBrands.find((b: any) => {
               if (!b.domain) return false
               const brandSubdomain = b.domain.split('.')[0]
-              return brandSubdomain === subdomain
+              const matches = brandSubdomain === subdomain
+              
+              if (process.env.NODE_ENV === 'development' && matches) {
+                console.log('[getBrandByDomain] ✅ Subdomain match found:', {
+                  domain,
+                  subdomain,
+                  matchedBrandDomain: b.domain,
+                  matchedBrandSlug: b.slug,
+                  matchedBrandName: b.name
+                })
+              }
+              
+              return matches
             })
             
             if (matchedBrand) {
@@ -184,6 +205,22 @@ export async function getBrandByDomain(domain: string): Promise<BrandData | null
                 created_by: matchedBrand.created_by,
                 updated_by: matchedBrand.updated_by,
               }
+            } else {
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('[getBrandByDomain] ⚠️ No subdomain match found:', {
+                  domain,
+                  subdomain,
+                  availableBrands: allBrands.map((b: any) => ({
+                    slug: b.slug,
+                    domain: b.domain,
+                    subdomain: b.domain?.split('.')[0]
+                  }))
+                })
+              }
+            }
+          } else if (allError) {
+            if (process.env.NODE_ENV === 'development') {
+              console.error('[getBrandByDomain] ❌ Error fetching brands for subdomain match:', allError)
             }
           }
         }

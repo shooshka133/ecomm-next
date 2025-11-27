@@ -46,24 +46,36 @@ export async function getActiveBrandConfig(domain?: string) {
   try {
     const activeBrand = await getActiveBrand(domain)
     if (activeBrand && activeBrand.config) {
-      // Debug logging
+      // Debug logging (always log in development to help debug flashing)
       if (process.env.NODE_ENV === 'development') {
-        console.log('[getActiveBrandConfig]', {
+        console.log('[getActiveBrandConfig] ✅ Brand found:', {
           domain,
           brandSlug: activeBrand.slug,
           brandName: activeBrand.name,
           configName: activeBrand.config?.name,
           seoTitle: activeBrand.config?.seo?.title,
+          hasConfig: !!activeBrand.config,
         })
       }
       return activeBrand.config
+    } else {
+      // Log when brand is found but has no config
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[getActiveBrandConfig] ⚠️ Brand found but no config:', {
+          domain,
+          brandSlug: activeBrand?.slug,
+          brandName: activeBrand?.name,
+        })
+      }
     }
   } catch (error) {
-    console.error('Error loading active brand:', error)
+    console.error('[getActiveBrandConfig] ❌ Error loading active brand:', error)
   }
 
   // Fallback to default brand.config.ts
-  console.warn('[getActiveBrandConfig] No active brand found, using default config')
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('[getActiveBrandConfig] ⚠️ No active brand found for domain:', domain, '- using default config')
+  }
   return brand
 }
 
