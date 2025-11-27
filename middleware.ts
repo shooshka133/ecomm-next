@@ -9,6 +9,8 @@ export async function middleware(req: NextRequest) {
   const domain = host ? host.split(':')[0] : undefined
 
   // Store domain in request headers for use in server components
+  // Note: Brand slug lookup is done in server components (not in Edge Runtime)
+  // to avoid Node.js module dependencies (path, fs, etc.)
   const requestHeaders = new Headers(req.headers)
   if (domain) {
     requestHeaders.set('x-brand-domain', domain)

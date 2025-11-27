@@ -385,6 +385,80 @@ export default function BrandEditor({ brand: initialBrand, onSave, onClose }: Br
               />
             </div>
           </div>
+
+          {/* Supabase Configuration */}
+          <div className="space-y-4 border-t border-gray-200 pt-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Supabase Configuration</h3>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Optional</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              Configure a separate Supabase project for this brand. If not set, the brand will use the main Supabase project.
+            </p>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Supabase URL
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="url"
+                value={brand.config?.supabase?.url || ''}
+                onChange={(e) => handleConfigChange('supabase.url', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="https://xxxxx.supabase.co"
+                pattern="https://.*\.supabase\.co"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Must be a valid Supabase project URL (https://xxxxx.supabase.co)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Supabase Anon Key
+                <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="text"
+                value={brand.config?.supabase?.anonKey || ''}
+                onChange={(e) => handleConfigChange('supabase.anonKey', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                pattern="^eyJ.*"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Public anon key from your Supabase project settings (starts with "eyJ")
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Environment Prefix (Optional)
+              </label>
+              <input
+                type="text"
+                value={brand.config?.supabase?.envPrefix || ''}
+                onChange={(e) => {
+                  // Only allow uppercase letters and underscores
+                  const value = e.target.value.toUpperCase().replace(/[^A-Z_]/g, '')
+                  handleConfigChange('supabase.envPrefix', value)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                placeholder="GROCERY"
+                pattern="^[A-Z_]+$"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Used for environment variable fallback (e.g., NEXT_PUBLIC_SUPABASE_URL_GROCERY). Only letters A-Z and underscores.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> Only use <strong>anon/public keys</strong> here. Never store service role keys in brand configuration.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}

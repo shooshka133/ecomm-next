@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar'
 import ToastWrapper from '@/components/ToastWrapper'
 import Link from 'next/link'
 import { getBrandName, getBrandSlogan, getSeoTitle, getSeoDescription, getLogoUrl, getFaviconUrl, getAppleIconUrl, getPrimaryColor, getFooterCopyright, getFooterLinks, getSocialLinks, getBrandColors } from '@/lib/brand'
-import { getActiveBrandConfig, getDomainFromRequest } from '@/lib/brand/admin-loader'
+import { getActiveBrandConfig, getDomainFromRequest, getActiveBrandWithMetadata } from '@/lib/brand/admin-loader'
 import { headers } from 'next/headers'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -203,11 +203,19 @@ export default async function RootLayout({
   
   try {
     const brandConfig = await getActiveBrandConfig(domain)
+    const activeBrand = await getActiveBrandWithMetadata(domain)
     const title = brandConfig?.seo?.title || getSeoTitle()
     const colors = brandConfig?.colors || getBrandColors()
     
+    // Add brand metadata (slug, id) to config for client-side use
+    const fullBrandConfig = {
+      ...brandConfig,
+      slug: activeBrand?.slug || 'default',
+      id: activeBrand?.id || null,
+    }
+    
     // Serialize brand config for client-side use (prevents client-side fetching)
-    brandConfigJson = JSON.stringify(brandConfig).replace(/</g, '\\u003c')
+    brandConfigJson = JSON.stringify(fullBrandConfig).replace(/</g, '\\u003c')
     
     // Escape title for JS
     const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'")

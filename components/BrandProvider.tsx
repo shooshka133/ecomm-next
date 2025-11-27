@@ -31,6 +31,7 @@ export default function BrandProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
     // This is set in layout.tsx before React hydration, so it's available immediately
+    // NO CLIENT-SIDE FETCHING - prevents flashing and ensures correct brand from start
     try {
       const configScript = document.getElementById('__BRAND_CONFIG__')
       if (configScript && configScript.textContent) {
@@ -44,19 +45,12 @@ export default function BrandProvider({ children }: { children: React.ReactNode 
       }
     }
     
-    // Fallback: Fetch from API if server-injected config not available
-    fetch('/api/brand-config')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.brand) {
-          setBrandConfig(data.brand)
-        }
-      })
-      .catch(error => {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('Failed to load domain-based brand, using static config:', error)
-        }
-      })
+    // If server-injected config is not available, we still don't fetch
+    // This ensures no flashing - the server should always inject the config
+    // If we reach here, it's a configuration error that should be fixed
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[BrandProvider] Server-injected brand config not found. This should not happen.')
+    }
   }, [])
 
   useEffect(() => {

@@ -120,31 +120,71 @@ export async function getAllBrands(): Promise<BrandData[]> {
 
 /**
  * Get brand by domain
+ * Supports both exact matching and subdomain matching for local testing
+ * e.g., "grocery.local" will match brand with domain "grocery.shooshka.online"
  */
 export async function getBrandByDomain(domain: string): Promise<BrandData | null> {
   if (USE_DB) {
     const supabase = getSupabaseAdmin()
     if (supabase) {
       try {
-        const { data, error } = await supabase
+        // First try exact match
+        const { data: exactMatch, error: exactError } = await supabase
           .from('brands')
           .select('*')
           .eq('domain', domain)
           .single()
         
-        if (!error && data) {
+        if (!exactError && exactMatch) {
           return {
-            id: data.id,
-            slug: data.slug,
-            name: data.name,
-            is_active: data.is_active,
-            domain: data.domain,
-            config: data.config,
-            asset_urls: data.asset_urls || {},
-            created_at: data.created_at,
-            updated_at: data.updated_at,
-            created_by: data.created_by,
-            updated_by: data.updated_by,
+            id: exactMatch.id,
+            slug: exactMatch.slug,
+            name: exactMatch.name,
+            is_active: exactMatch.is_active,
+            domain: exactMatch.domain,
+            config: exactMatch.config,
+            asset_urls: exactMatch.asset_urls || {},
+            created_at: exactMatch.created_at,
+            updated_at: exactMatch.updated_at,
+            created_by: exactMatch.created_by,
+            updated_by: exactMatch.updated_by,
+          }
+        }
+
+        // If no exact match, try subdomain matching (for local testing)
+        // Extract subdomain from domain (e.g., "grocery" from "grocery.local" or "grocery.shooshka.online")
+        const subdomain = domain.split('.')[0]
+        
+        if (subdomain && subdomain !== 'localhost' && subdomain !== 'www') {
+          // Get all brands and match by subdomain
+          const { data: allBrands, error: allError } = await supabase
+            .from('brands')
+            .select('*')
+            .not('domain', 'is', null)
+          
+          if (!allError && allBrands) {
+            // Find brand where domain starts with the subdomain
+            const matchedBrand = allBrands.find((b: any) => {
+              if (!b.domain) return false
+              const brandSubdomain = b.domain.split('.')[0]
+              return brandSubdomain === subdomain
+            })
+            
+            if (matchedBrand) {
+              return {
+                id: matchedBrand.id,
+                slug: matchedBrand.slug,
+                name: matchedBrand.name,
+                is_active: matchedBrand.is_active,
+                domain: matchedBrand.domain,
+                config: matchedBrand.config,
+                asset_urls: matchedBrand.asset_urls || {},
+                created_at: matchedBrand.created_at,
+                updated_at: matchedBrand.updated_at,
+                created_by: matchedBrand.created_by,
+                updated_by: matchedBrand.updated_by,
+              }
+            }
           }
         }
       } catch (error) {
@@ -156,8 +196,20 @@ export async function getBrandByDomain(domain: string): Promise<BrandData | null
   // Fallback to file-based
   try {
     const brands = await getAllBrands()
-    const brand = brands.find(b => b.domain === domain)
+    // Try exact match first
+    let brand = brands.find(b => b.domain === domain)
     if (brand) return brand
+    
+    // Try subdomain matching
+    const subdomain = domain.split('.')[0]
+    if (subdomain && subdomain !== 'localhost' && subdomain !== 'www') {
+      brand = brands.find(b => {
+        if (!b.domain) return false
+        const brandSubdomain = b.domain.split('.')[0]
+        return brandSubdomain === subdomain
+      })
+      if (brand) return brand
+    }
   } catch (error) {
     console.error('Error finding brand by domain:', error)
   }

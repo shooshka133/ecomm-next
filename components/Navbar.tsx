@@ -6,7 +6,7 @@ import { useAuth } from './AuthProvider'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
-import { createSupabaseClient } from '@/lib/supabase/client'
+import { useBrandSupabaseClient } from '@/lib/supabase/brand-client'
 import { getBrandName, getLogoUrl, getBrandColors } from '@/lib/brand'
 
 // Helper to convert hex to rgba
@@ -26,9 +26,10 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [brandConfig, setBrandConfig] = useState<any>(null)
-  const supabase = createSupabaseClient()
+  const supabase = useBrandSupabaseClient()
   
   // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
+  // NO CLIENT-SIDE FETCHING - prevents flashing
   useEffect(() => {
     try {
       const configScript = document.getElementById('__BRAND_CONFIG__')
@@ -43,17 +44,10 @@ export default function Navbar() {
       }
     }
     
-    // Fallback: Fetch from API if server-injected config not available
-    fetch('/api/brand-config')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.brand) {
-          setBrandConfig(data.brand)
-        }
-      })
-      .catch(error => {
-        console.warn('Failed to load brand config, using static:', error)
-      })
+    // If server-injected config is not available, this is a configuration error
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Navbar] Server-injected brand config not found. This should not happen.')
+    }
   }, [])
   
   // Get brand configuration (dynamic or fallback to static)

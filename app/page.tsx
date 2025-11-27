@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { useBrandSupabaseClient } from "@/lib/supabase/brand-client";
 import ProductGrid from "@/components/ProductGrid";
 import SearchBar from "@/components/SearchBar";
 import CategoryFilter from "@/components/CategoryFilter";
@@ -9,7 +9,7 @@ import Pagination from "@/components/Pagination";
 import AutoScrollProducts from "@/components/AutoScrollProducts";
 import HeroWindowDisplay from "@/components/HeroWindowDisplay";
 import { Sparkles, Truck, Shield, Star, TrendingUp } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Product } from "@/types";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getHeroTitle, getHeroSubtitle, getHeroCtaText, getHeroBadge, getFeatureStats, getBrandColors } from "@/lib/brand";
@@ -22,12 +22,15 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 24; // Increased from 12 to show more products
-  const [supabase, setSupabase] = useState<ReturnType<typeof createSupabaseClient> | null>(null);
-  const [supabaseReady, setSupabaseReady] = useState(false);
+  // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
   const [brandConfig, setBrandConfig] = useState<any>(null);
   
-  // Get brand config from server-injected JSON (no fetch needed - already in HTML!)
+  // Prevent multiple simultaneous loads and blinking
+  const loadingRef = useRef(false);
+  const loadedBrandSlugRef = useRef<string | null>(null);
+  
   useEffect(() => {
+    // NO CLIENT-SIDE FETCHING - prevents flashing
     try {
       const configScript = document.getElementById('__BRAND_CONFIG__')
       if (configScript && configScript.textContent) {
@@ -41,18 +44,14 @@ export default function Home() {
       }
     }
     
-    // Fallback: Fetch from API if server-injected config not available
-    fetch('/api/brand-config')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.brand) {
-          setBrandConfig(data.brand)
-        }
-      })
-      .catch(error => {
-        console.warn('Failed to load brand config, using static:', error)
-      })
+    // If server-injected config is not available, this is a configuration error
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[Homepage] Server-injected brand config not found. This should not happen.')
+    }
   }, []);
+
+  // Use brand-aware Supabase client
+  const supabase = useBrandSupabaseClient();
   
   // Get brand hero configuration (dynamic or fallback to static)
   const heroTitle = brandConfig?.hero?.title || getHeroTitle();
@@ -130,59 +129,27 @@ export default function Home() {
     }
   }, [searchParams]);
 
+  // Load products when component mounts and brand config is available
   useEffect(() => {
-    // Clear products and set loading when initializing
-    setProducts([])
-    setLoading(true)
-    
-    // Get domain-based Supabase client BEFORE loading products
-    const initSupabase = async () => {
-      try {
-        const response = await fetch('/api/supabase-config')
-        const data = await response.json()
-        
-        console.log('[Homepage] Supabase config response:', {
-          success: data.success,
-          domain: data.domain,
-          brandSlug: data.brandSlug,
-          hasUrl: !!data.supabaseUrl,
-          hasKey: !!data.supabaseKey,
-          url: data.supabaseUrl?.substring(0, 30) + '...'
-        })
-        
-        if (data.success && data.supabaseUrl && data.supabaseKey) {
-          // Import createClient dynamically
-          const { createClient } = await import('@supabase/supabase-js')
-          const domainClient = createClient(data.supabaseUrl, data.supabaseKey)
-          console.log('[Homepage] Created domain-based Supabase client for:', data.brandSlug)
-          setSupabase(domainClient)
-          setSupabaseReady(true)
-        } else {
-          console.warn('[Homepage] Failed to get Supabase config, using default client')
-          // Fallback to default client
-          setSupabase(createSupabaseClient())
-          setSupabaseReady(true)
-        }
-      } catch (error: any) {
-        console.error('[Homepage] Error initializing domain-based Supabase client:', error)
-        console.warn('[Homepage] Using default Supabase client (main project). This is OK if /api/supabase-config is not deployed yet.')
-        // Fallback to default client
-        setSupabase(createSupabaseClient())
-        setSupabaseReady(true)
+    if (supabase && brandConfig) {
+      const currentBrandSlug = brandConfig?.slug || 'default';
+      
+      // Only reload if brand changed or not loaded yet
+      if (loadedBrandSlugRef.current !== currentBrandSlug) {
+        console.log('[Homepage] Supabase client and brand config ready, loading products...', {
+          currentBrand: currentBrandSlug,
+          previousBrand: loadedBrandSlugRef.current
+        });
+        loadProducts();
+      } else if (!loadingRef.current && products.length === 0) {
+        // If no products loaded yet, load them
+        console.log('[Homepage] No products loaded yet, loading...');
+        loadProducts();
       }
-    }
-    
-    initSupabase()
-  }, []);
-
-  useEffect(() => {
-    if (supabase && supabaseReady) {
-      console.log('[Homepage] Supabase client ready, loading products...')
-      loadProducts();
     } else {
-      console.log('[Homepage] Waiting for Supabase client...')
+      console.log('[Homepage] Waiting for Supabase client and brand config...')
     }
-  }, [supabase, supabaseReady]);
+  }, [supabase, brandConfig]);
 
   const loadProducts = async () => {
     if (!supabase) {
@@ -190,49 +157,60 @@ export default function Home() {
       return
     }
     
+    // Prevent multiple simultaneous loads
+    if (loadingRef.current) {
+      console.log('[Homepage] Already loading products, skipping...')
+      return
+    }
+    
+    loadingRef.current = true
+    
     try {
-      setLoading(true)
-      
-      // Get brand config to determine if we should filter by brand_id
-      let brandId: string | null = null
-      let brandSlug: string | null = null
-      try {
-        const brandResponse = await fetch('/api/brand-config')
-        const brandData = await brandResponse.json()
-        if (brandData.success) {
-          brandId = brandData.brandId
-          brandSlug = brandData.brandSlug
-        }
-      } catch (error) {
-        console.warn('[Homepage] Could not fetch brand config:', error)
+      // Only show loading state if we don't have products yet (prevents blinking)
+      if (products.length === 0) {
+        setLoading(true)
       }
+      
+      // Get brand info from server-injected config
+      const brandSlug = brandConfig?.slug || null
+      const brandId = brandConfig?.id || null
 
       console.log('[Homepage] Loading products:', {
         brandSlug,
         brandId,
-        supabaseUrl: (supabase as any)?.supabaseUrl?.substring(0, 30) + '...' || 'unknown'
+        hasCustomSupabase: !!(brandConfig?.supabase?.url),
+        fullBrandConfig: brandConfig // Debug: show full config
       })
 
       // Build query
-      // If using a separate Supabase project (grocery), load ALL products from that project
+      // If brand has its own Supabase project, load ALL products from that project
       // If using main Supabase project, filter by brand_id
       let query = supabase
         .from("products")
         .select("*")
       
       // Only filter by brand_id if we're using the main Supabase project
-      // Grocery Supabase project should have all grocery products (no filtering needed)
-      const isGroceryBrand = brandSlug && (
-        brandSlug.toLowerCase() === 'grocery-store' ||
-        brandSlug.toLowerCase() === 'grocerystore' ||
-        brandSlug.toLowerCase().includes('grocery')
-      )
+      // Brands with their own Supabase project should have all their products (no filtering needed)
+      const hasCustomSupabase = !!(brandConfig?.supabase?.url)
       
-      if (brandId && !isGroceryBrand) {
+      // For grocery brand, if it has a slug but no custom Supabase, we need to filter
+      // Check if this is a specific brand (not default)
+      const isSpecificBrand = brandSlug && brandSlug !== 'default'
+      
+      if (brandId && !hasCustomSupabase && isSpecificBrand) {
+        // Filter by brand_id - show only products for this brand OR products with no brand_id (legacy)
         query = query.or(`brand_id.eq.${brandId},brand_id.is.null`)
         console.log('[Homepage] Filtering by brand_id:', brandId)
+      } else if (isSpecificBrand && !hasCustomSupabase) {
+        // Brand slug exists but no brand_id - try to filter by slug match in product name/category
+        // OR load all and let the brand's Supabase handle it
+        // For now, if no brand_id, we can't filter effectively, so show all
+        // TODO: Add brand_id to products table and update products
+        console.log('[Homepage] Brand has no brand_id - loading all products. Consider adding brand_id to products.')
+      } else if (hasCustomSupabase) {
+        console.log('[Homepage] Brand has own Supabase - loading all products from brand Supabase')
       } else {
-        console.log('[Homepage] Loading all products (no brand filter)')
+        console.log('[Homepage] Default brand - loading all products')
       }
       
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -247,11 +225,14 @@ export default function Home() {
         console.log('[Homepage] First product:', data[0].name, 'Category:', data[0].category)
       }
       
+      // Update products and mark brand as loaded
       setProducts(data || []);
+      loadedBrandSlugRef.current = brandConfig?.slug || 'default';
     } catch (error) {
       console.error('[Homepage] Error loading products:', error);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
   };
 

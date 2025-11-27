@@ -1,7 +1,6 @@
 'use client'
 
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { getBrandColors } from '@/lib/brand'
 
 interface PaginationProps {
   currentPage: number
@@ -10,7 +9,15 @@ interface PaginationProps {
 }
 
 export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  const brandColors = getBrandColors()
+  // Use CSS variables directly (set by inline styles in layout.tsx) - no flash!
+  const brandColors = {
+    primary: typeof window !== 'undefined' 
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#4F46E5'
+      : '#4F46E5',
+    accent: typeof window !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue('--brand-accent').trim() || '#7C3AED'
+      : '#7C3AED',
+  }
   
   if (totalPages <= 1) return null
 

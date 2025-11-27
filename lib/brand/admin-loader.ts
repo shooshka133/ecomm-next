@@ -91,3 +91,19 @@ export async function getActiveBrandWithMetadata(domain?: string) {
   }
 }
 
+/**
+ * Get brand slug from domain
+ * Used by middleware to set x-brand-slug header
+ */
+export async function getBrandSlugFromDomain(domain?: string): Promise<string | null> {
+  try {
+    const activeBrand = await getActiveBrand(domain)
+    if (activeBrand && activeBrand.slug) {
+      return activeBrand.slug
+    }
+  } catch (error) {
+    console.error('Error getting brand slug from domain:', error)
+  }
+  return null
+}
+
